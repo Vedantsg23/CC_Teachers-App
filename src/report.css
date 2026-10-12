@@ -1,0 +1,481 @@
+/*
+ * Report pages — exact A4 boxes. Used for the on-screen preview, browser
+ * printing and the PDF engine (which reads this layout). Only plain sRGB
+ * colours and the bundled Noto Sans Devanagari font are used here.
+ */
+
+.a4 {
+  --rb: #6f9bc6; /* table rule colour */
+  --rh: #dbe3ee; /* table header fill */
+  width: 210mm;
+  height: 297mm;
+  padding: 9mm 10mm 10mm;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'CCE Sans', 'Noto Sans Devanagari', sans-serif;
+  font-size: 10pt;
+  line-height: 1.35;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  word-break: normal;
+  overflow-wrap: normal;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  text-align: left;
+}
+.a4.landscape {
+  width: 297mm;
+  height: 210mm;
+  padding: 8mm 10mm 9mm;
+}
+.a4 * {
+  box-sizing: border-box;
+}
+.a4 .page-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.a4 .page-foot {
+  flex: none;
+}
+
+.rpt-org {
+  text-align: center;
+  font-size: 10pt;
+}
+.rpt-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 16pt;
+  line-height: 1.3;
+  margin: 0 0 1.2mm;
+}
+.rpt-subtitle {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12pt;
+  margin: 0 0 1mm;
+}
+.rpt-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4mm;
+  font-size: 10.5pt;
+  line-height: 1.45;
+}
+.rpt-meta > :nth-child(2):not(:last-child) {
+  text-align: center;
+}
+.rpt-meta > :last-child:not(:first-child) {
+  text-align: right;
+}
+.rpt-meta b {
+  font-weight: 700;
+}
+.rpt-gap {
+  height: 2mm;
+}
+
+/* register tables */
+.rt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 0.75pt solid var(--rb);
+  border-left: 0.75pt solid var(--rb);
+  font-size: 9pt;
+  line-height: 1.3;
+  table-layout: auto;
+}
+.rt th,
+.rt td {
+  border-right: 0.75pt solid var(--rb);
+  border-bottom: 0.75pt solid var(--rb);
+  padding: 0.9mm 0.8mm;
+  text-align: center;
+  vertical-align: middle;
+}
+.rt th {
+  background: var(--rh);
+  font-weight: 700;
+}
+.rt .l {
+  text-align: left;
+}
+.rt .r {
+  text-align: right;
+}
+.rt .b {
+  font-weight: 700;
+}
+.rt .muted {
+  color: #333333;
+}
+.rt .sm {
+  font-size: 7.5pt;
+}
+.rt .xs {
+  font-size: 6.5pt;
+}
+.rt th.vt-cell {
+  padding: 1.2mm 0.2mm;
+  vertical-align: middle;
+}
+.rt td.name {
+  text-align: left;
+  white-space: nowrap;
+}
+.rt td.wrap {
+  white-space: normal;
+}
+.rt tr.total td {
+  font-weight: 700;
+  background: #f1f4f9;
+}
+.rt.big {
+  font-size: 10.5pt;
+}
+.rt.big th,
+.rt.big td {
+  padding: 1.6mm 1.4mm;
+}
+.rt.tall td {
+  padding-top: 2.2mm;
+  padding-bottom: 2.2mm;
+}
+
+/* vertical header text (reads bottom → top) */
+.vt-box {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.vt-size {
+  writing-mode: vertical-rl;
+  visibility: hidden;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
+}
+.vt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* signatures */
+.sign-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 6mm;
+  margin-top: 12mm;
+  font-size: 9.5pt;
+}
+.sign-row.compact {
+  margin-top: 8mm;
+}
+.sign {
+  text-align: center;
+  min-width: 40mm;
+}
+.sign .lbl {
+  font-size: 8.5pt;
+}
+.sign .who {
+  font-size: 10pt;
+  margin-top: 0.8mm;
+}
+
+.page-no {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4mm;
+  text-align: center;
+  font-size: 8pt;
+  color: #444444;
+}
+
+/* cover page */
+.cover {
+  align-items: center;
+  text-align: center;
+}
+.cover-emblem {
+  width: 30mm;
+  height: 30mm;
+  margin: 14mm auto 4mm;
+}
+.cover-org {
+  font-size: 13pt;
+}
+.cover-year {
+  font-size: 18pt;
+  font-weight: 700;
+  margin-top: 1mm;
+}
+.cover-title {
+  font-size: 40pt;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1e3a6e;
+  margin: 8mm 0 2mm;
+}
+.cover-rule {
+  width: 120mm;
+  height: 0;
+  border-top: 1.5pt solid #c2362f;
+  margin: 4mm auto 16mm;
+}
+.cover-box {
+  width: 150mm;
+  margin: 0 auto;
+  padding: 7mm 9mm;
+  background: #eef3fa;
+  border: 0.75pt solid #b8cbe2;
+  text-align: left;
+}
+.cover-box table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14pt;
+}
+.cover-box td {
+  padding: 2.2mm 1mm;
+  vertical-align: top;
+}
+.cover-box td.k {
+  width: 38mm;
+  white-space: nowrap;
+}
+.cover-box td.c {
+  width: 5mm;
+}
+.cover-box td.v {
+  font-weight: 700;
+}
+
+/* progress card (two terms side by side) */
+.pc-halves {
+  display: flex;
+  gap: 0;
+  height: 100%;
+}
+.pc-half {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 5mm;
+}
+.pc-half + .pc-half {
+  border-left: 0.75pt dashed #9aa9bd;
+}
+.pc-term {
+  text-align: center;
+  font-size: 12.5pt;
+  font-weight: 700;
+  color: #1e3a6e;
+  margin-bottom: 1mm;
+}
+.pc-school {
+  text-align: center;
+  font-size: 8.5pt;
+  margin-bottom: 0.5mm;
+}
+.pc-half .rpt-meta {
+  font-size: 9pt;
+  line-height: 1.4;
+}
+.pc-half .rt {
+  font-size: 8.2pt;
+}
+.pc-half .rt td,
+.pc-half .rt th {
+  padding: 0.7mm 0.7mm;
+}
+.pc-half .sign-row {
+  margin-top: auto;
+  padding-top: 7mm;
+  font-size: 8.5pt;
+}
+.pc-half .sign {
+  min-width: 0;
+}
+
+/* leaving certificate */
+.lc {
+  font-size: 11pt;
+}
+.lc-head {
+  text-align: center;
+  line-height: 1.4;
+}
+.lc-head .org {
+  font-size: 10.5pt;
+}
+.lc-head .school {
+  font-size: 15pt;
+  font-weight: 700;
+}
+.lc-head .addr {
+  font-size: 9.5pt;
+}
+.lc-ids {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5pt;
+  margin-top: 1.5mm;
+}
+.lc-title {
+  text-align: center;
+  margin: 3.5mm auto 1mm;
+  font-size: 15pt;
+  font-weight: 700;
+  border-top: 0.75pt solid #000;
+  border-bottom: 0.75pt solid #000;
+  padding: 1mm 0;
+}
+.lc-note {
+  text-align: center;
+  font-size: 9pt;
+  margin-bottom: 3mm;
+}
+.lc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 10.5pt;
+}
+.lc-table td {
+  padding: 1.15mm 1mm;
+  vertical-align: top;
+  border-bottom: 0.5pt dotted #8a8a8a;
+}
+.lc-table td.n {
+  width: 8mm;
+  text-align: right;
+  padding-right: 2mm;
+}
+.lc-table td.k {
+  width: 72mm;
+}
+.lc-table td.c {
+  width: 4mm;
+}
+.lc-table td.v {
+  font-weight: 700;
+}
+.lc-cert {
+  margin-top: 4mm;
+  font-size: 10.5pt;
+  line-height: 1.6;
+}
+.lc-place {
+  margin-top: 3mm;
+  font-size: 10pt;
+}
+
+/* ------------------------------------------------------------------ */
+/* Preview stage                                                       */
+/* ------------------------------------------------------------------ */
+.report-stage {
+  background: #e4e9f0;
+  padding: 12px 8px 40px;
+}
+.report-page-wrap {
+  margin: 0 auto 14px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(20, 42, 82, 0.18),
+    0 6px 18px rgba(20, 42, 82, 0.1);
+}
+.report-page-wrap > .a4 {
+  transform-origin: 0 0;
+}
+.report-measure {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Print: only the report pages, at true size                          */
+/* ------------------------------------------------------------------ */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+  #print-root .no-print,
+  #print-root .report-measure {
+    display: none !important;
+  }
+  #print-root .report-viewer,
+  #print-root .report-scroll {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    inset: auto !important;
+    background: #ffffff !important;
+  }
+  #print-root .report-stage {
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+  #print-root .report-page-wrap {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  #print-root .report-page-wrap:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  #print-root .a4 {
+    transform: none !important;
+  }
+}
+
+/* preview scaling (the PDF engine compensates for this transform) */
+.report-stage {
+  --s: 1;
+}
+.report-page-wrap.portrait {
+  width: calc(210mm * var(--s));
+  height: calc(297mm * var(--s));
+}
+.report-page-wrap.landscape {
+  width: calc(297mm * var(--s));
+  height: calc(210mm * var(--s));
+}
+.report-page-wrap > .a4 {
+  transform: scale(var(--s));
+}
+@media print {
+  #print-root .report-stage {
+    --s: 1 !important;
+  }
+}

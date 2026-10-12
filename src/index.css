@@ -1,0 +1,239 @@
+@import 'tailwindcss';
+@import './report.css';
+
+/* ------------------------------------------------------------------ */
+/* Fonts (bundled — work offline)                                      */
+/* ------------------------------------------------------------------ */
+@font-face {
+  font-family: 'CCE Sans';
+  src: url('./assets/fonts/NotoSansDevanagari-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CCE Sans';
+  src: url('./assets/fonts/NotoSansDevanagari-SemiBold.ttf') format('truetype');
+  font-weight: 500 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CCE Sans';
+  src: url('./assets/fonts/NotoSansDevanagari-Bold.ttf') format('truetype');
+  font-weight: 700 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CCE Display';
+  src: url('./assets/fonts/TiroDevanagariMarathi-Devanagari.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF;
+}
+@font-face {
+  font-family: 'CCE Display';
+  src: url('./assets/fonts/TiroDevanagariMarathi-Latin.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2122, U+2212;
+}
+
+/* ------------------------------------------------------------------ */
+/* Design tokens — a teacher's register: ink, paper, ruled lines      */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-ink: #1e3a6e; /* शाई — fountain-pen blue */
+  --color-ink-deep: #142a52;
+  --color-ink-soft: #e8eef7;
+  --color-paper: #f2f4f7; /* register paper */
+  --color-rule: #d6dee9; /* ruled lines */
+  --color-rule-strong: #b9c6d8;
+  --color-margin: #c2362f; /* red margin line / red ink */
+  --color-margin-soft: #fbeceb;
+  --color-leaf: #1f7a4a; /* saved / online / pass */
+  --color-leaf-soft: #e7f4ec;
+  --color-turmeric: #9a5a0f; /* offline / warnings */
+  --color-turmeric-soft: #fbf1e3;
+  --color-text: #18212f;
+  --color-muted: #586477;
+
+  --font-sans: 'CCE Sans', 'Noto Sans Devanagari', 'Mukta', system-ui, sans-serif;
+  --font-display: 'CCE Display', 'CCE Sans', serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 2.5px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+  ::selection {
+    background: #c9d8ee;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Components                                                          */
+/* ------------------------------------------------------------------ */
+@layer components {
+  .field-input {
+    @apply block w-full rounded-lg border border-rule-strong bg-white px-3 py-2.5 text-base text-text outline-none transition-colors;
+    min-height: 46px;
+  }
+  .field-input:focus {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 3px #d5e1f2;
+  }
+  .field-input[aria-invalid='true'] {
+    border-color: var(--color-margin);
+    background: #fffafa;
+  }
+  .field-input:disabled {
+    background: #f3f5f8;
+    color: var(--color-muted);
+  }
+  select.field-input {
+    appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231e3a6e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 text-[15px] font-semibold whitespace-nowrap transition-colors select-none disabled:cursor-not-allowed disabled:opacity-55;
+    min-height: 46px;
+  }
+  .btn-primary {
+    @apply bg-ink text-white hover:bg-ink-deep active:bg-ink-deep;
+  }
+  .btn-secondary {
+    @apply border border-rule-strong bg-white text-ink hover:bg-ink-soft;
+  }
+  .btn-ghost {
+    @apply text-ink hover:bg-ink-soft;
+  }
+  .btn-danger {
+    @apply bg-margin text-white hover:bg-[#a52b25];
+  }
+  .btn-danger-ghost {
+    @apply text-margin hover:bg-margin-soft;
+  }
+  .btn-sm {
+    min-height: 38px;
+    @apply px-3 text-sm;
+  }
+
+  .panel {
+    @apply rounded-xl border border-rule bg-white;
+  }
+
+  /* data-entry grids */
+  .grid-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    @apply w-full text-[15px];
+  }
+  .grid-table th {
+    @apply sticky top-0 z-10 border-b border-rule bg-ink-soft px-1.5 py-2 text-center text-[13px] leading-tight font-semibold text-ink-deep;
+  }
+  .grid-table td {
+    @apply border-b border-rule px-1 py-1 text-center;
+  }
+  .grid-table .sticky-col {
+    @apply sticky left-0 z-[5] bg-white text-left;
+    box-shadow: 1px 0 0 var(--color-rule);
+  }
+  .grid-table th.sticky-col {
+    @apply z-20 bg-ink-soft;
+  }
+  .cell-input {
+    @apply w-[52px] rounded-md border border-rule bg-white px-1 py-1.5 text-center text-base outline-none;
+    min-height: 40px;
+    font-variant-numeric: tabular-nums;
+  }
+  .cell-input:focus {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 2px #d5e1f2;
+  }
+  .cell-input[aria-invalid='true'] {
+    border-color: var(--color-margin);
+    background: var(--color-margin-soft);
+    color: var(--color-margin);
+  }
+  .cell-input.is-saved {
+    border-color: #9ccfb1;
+  }
+
+  /* register margin rule — the one signature motif */
+  .margin-rule {
+    position: relative;
+  }
+  .margin-rule::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    bottom: 0.35em;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--color-margin);
+  }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* ruled paper (login screen) */
+.ruled-paper {
+  background-color: #fbfcfe;
+  background-image: linear-gradient(to bottom, transparent 31px, #dfe6f0 31px, #dfe6f0 32px);
+  background-size: 100% 32px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.toast-in {
+  animation: rise 0.18s ease-out;
+}
