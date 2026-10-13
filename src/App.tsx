@@ -5,7 +5,6 @@ import { FeedbackProvider } from './components/feedback';
 import { AppShell } from './components/layout/AppShell';
 import { EmptyState, LinkButton, Spinner } from './components/ui';
 import { LoginPage } from './features/auth/LoginPage';
-import { SetupWizard } from './features/auth/SetupWizard';
 import { Dashboard } from './features/dashboard/Dashboard';
 
 const StudentsPage = lazy(() => import('./features/students/StudentsPage'));
@@ -143,8 +142,9 @@ function Gate() {
       </div>
     );
   }
-  if (phase === 'setup') return <SetupWizard />;
-  if (phase === 'login' || !user) return <LoginPage />;
+  // First run: teachers create their own account (or the headmaster sets up the school first).
+  if (phase === 'setup') return <LoginPage key="first-run" firstRun />;
+  if (phase === 'login' || !user) return <LoginPage key="login" />;
   return <HashRouter>{user.role === 'admin' ? <AdminRoutes /> : <TeacherRoutes />}</HashRouter>;
 }
 

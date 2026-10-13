@@ -56,9 +56,12 @@ def pdf_pages(path: str) -> int:
 
 
 def setup(pg: Page):
+    """First run: the headmaster sets up the school + admin account (optional path)."""
     pg.goto(BASE)
-    pg.wait_for_selector('text=प्राथमिक मांडणी', timeout=20000)
-    shot(pg, '01-setup')
+    pg.wait_for_selector('text=नवीन शिक्षक खाते', timeout=20000)
+    shot(pg, '01-first-run-register')
+    check('first run opens teacher registration', pg.get_by_role('radio', name='इयत्ता सातवी').count() == 1)
+    pg.get_by_role('button', name='आधी शाळेची मांडणी करा').click()
     pg.get_by_label(re.compile('^शाळेचे नाव')).fill('जिल्हा परिषद प्राथमिक शाळा नमुनागाव')
     pg.get_by_label('UDISE क्रमांक').fill('27250800000')
     pg.get_by_label('व्यवस्थापन / संस्था').fill('जिल्हा परिषद, पुणे')
@@ -68,19 +71,22 @@ def setup(pg: Page):
     pg.get_by_role('button', name='पुढील').click()
     pg.get_by_label(PW).fill('admin123')
     pg.get_by_label(PW2).fill('admin123')
-    pg.get_by_role('button', name='पुढील').click()
-    expect(pg.get_by_text('सातवी', exact=False).first).to_be_visible()
-    pg.get_by_label(re.compile('^वर्गशिक्षकाचे नाव')).fill('श्री. राजेश जाधव')
-    pg.get_by_label(PW).fill('pass7777')
-    pg.get_by_label(PW2).fill('pass7777')
-    pg.get_by_role('button', name='पुढील').click()
-    pg.get_by_label(re.compile('^वर्गशिक्षकाचे नाव')).fill('श्रीम. कविता शिंदे')
-    pg.get_by_label(PW).fill('pass5555')
-    pg.get_by_label(PW2).fill('pass5555')
-    pg.get_by_role('button', name='पुढील').click()
     pg.get_by_role('button', name='मांडणी पूर्ण करा').click()
     pg.wait_for_selector('#login-user', timeout=30000)
-    check('first-time setup creates accounts', True)
+    check('headmaster set-up (school + admin) on first run', True)
+
+
+def register(pg: Page, std_word: str, section: str, name: str, user: str, password: str, open_form=True):
+    """A teacher creates their own account: standard → section/name → username/password."""
+    if open_form:
+        pg.get_by_role('button', name='नवीन खाते तयार करा').click()
+    pg.get_by_role('radio', name=f'इयत्ता {std_word}').click()
+    pg.get_by_label('तुकडी').select_option(section)
+    pg.get_by_label(re.compile('^वर्गशिक्षकाचे नाव')).fill(name)
+    pg.get_by_label(re.compile('^वापरकर्ता नाव')).fill(user)
+    pg.get_by_label(PW).fill(password)
+    pg.get_by_label(PW2).fill(password)
+    pg.get_by_role('button', name='खाते तयार करा').click()
 
 
 def login(pg: Page, user: str, password: str, expect_ok=True):
@@ -121,6 +127,22 @@ def main():
         # ---------------- setup & login ----------------
         setup(pg)
         check('default academic year is 2026-27', pg.get_by_text('सन : 2026-27').count() > 0)
+        # teachers create their own accounts (choose standard, then username + password)
+        register(pg, 'सातवी', 'ब', 'श्री. राजेश जाधव', 'teacher7', 'pass7777')
+        pg.wait_for_selector('main#main', timeout=20000)
+        expect(pg.get_by_text('नमस्कार, श्री. राजेश जाधव')).to_be_visible()
+        check('teacher self-registration (इयत्ता सातवी, तुकडी ब) logs in to its own class', pg.get_by_text('इयत्ता ७ वी').count() > 0)
+        logout(pg)
+        pg.get_by_role('button', name='नवीन खाते तयार करा').click()
+        shot(pg, '02-register')
+        register(pg, 'पाचवी', 'अ', 'श्रीम. कविता शिंदे', 'teacher7', 'pass5555', open_form=False)
+        expect(pg.get_by_text('हे वापरकर्ता नाव आधीच वापरले आहे. दुसरे नाव निवडा.')).to_be_visible()
+        check('registration refuses a username that is taken', True)
+        pg.get_by_label(re.compile('^वापरकर्ता नाव')).fill('teacher5')
+        pg.get_by_role('button', name='खाते तयार करा').click()
+        pg.wait_for_selector('main#main', timeout=20000)
+        check('second teacher registers for इयत्ता पाचवी', pg.get_by_text('नमस्कार, श्रीम. कविता शिंदे').count() > 0 and pg.get_by_text('इयत्ता ५ वी').count() > 0)
+        logout(pg)
         shot(pg, '02-login-desktop')
         login(pg, 'teacher7', 'nope', expect_ok=False)
         expect(pg.get_by_text('वापरकर्ता नाव किंवा पासवर्ड चुकीचा आहे.')).to_be_visible()

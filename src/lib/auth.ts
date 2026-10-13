@@ -129,6 +129,60 @@ export async function runSetup(input: SetupInput): Promise<void> {
   for (const t of teachers) await repo.getOrCreateClass(t, year);
 }
 
+export interface RegisterInput extends TeacherSetup {
+  confirm: string;
+  /** Asked only while this device has no school name yet. */
+  schoolName?: string;
+}
+
+/** Field-level registration errors (Marathi), keyed by form field. */
+export class RegisterError extends Error {
+  field: keyof RegisterInput | '';
+  constructor(field: keyof RegisterInput | '', msg: string) {
+    super(msg);
+    this.name = 'RegisterError';
+    this.field = field;
+  }
+}
+
+/**
+ * A teacher creates their own account on this device: choose the standard
+ * (इयत्ता 1–8) and section, then a username and password. The account sees only
+ * its own class. Works on a brand-new device too (marks the app as set up).
+ */
+export async function registerTeacher(input: RegisterInput): Promise<User> {
+  const username = input.username.trim().toLowerCase();
+  if (!(Number.isInteger(input.standard) && input.standard >= 1 && input.standard <= 8)) throw new RegisterError('standard', 'कृपया इयत्ता निवडा.');
+  if (!input.section.trim()) throw new RegisterError('section', 'कृपया तुकडी निवडा.');
+  if (!input.displayName.trim()) throw new RegisterError('displayName', 'कृपया वर्गशिक्षकाचे नाव भरा.');
+  const uErr = validateUsername(username);
+  if (uErr) throw new RegisterError('username', uErr);
+  if (username === 'admin') throw new RegisterError('username', 'हे वापरकर्ता नाव आधीच वापरले आहे.');
+  const pErr = validatePassword(input.password);
+  if (pErr) throw new RegisterError('password', pErr);
+  if (input.password !== input.confirm) throw new RegisterError('confirm', 'दोन्ही पासवर्ड सारखे नाहीत.');
+
+  const user = await newUser({ username, displayName: input.displayName, role: 'teacher', standard: input.standard, section: input.section.trim(), password: input.password });
+  let year = DEFAULT_YEAR;
+  await db.transaction('rw', db.users, db.meta, async () => {
+    if (await repo.getUserByUsername(username)) throw new RegisterError('username', 'हे वापरकर्ता नाव आधीच वापरले आहे. दुसरे नाव निवडा.');
+    const meta = await repo.getMeta();
+    if (!meta?.setupDone) {
+      await repo.saveMeta({ setupDone: true, years: [DEFAULT_YEAR], currentYear: DEFAULT_YEAR, createdAt: Date.now() });
+    } else {
+      year = meta.currentYear;
+    }
+    const schoolName = input.schoolName?.trim();
+    if (schoolName) {
+      const school = await repo.getSchool();
+      if (!school.name.trim()) await repo.saveSchool({ ...school, name: schoolName });
+    }
+    await db.users.add(user);
+  });
+  await repo.getOrCreateClass(user, year);
+  return user;
+}
+
 /* ------------------------------------------------------------------ */
 /* Login throttling (per username, per device)                         */
 /* ------------------------------------------------------------------ */

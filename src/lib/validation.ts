@@ -19,7 +19,7 @@ export const MSG = {
   attendanceExceeds: 'हजर दिवस हे कामाच्या दिवसांपेक्षा जास्त असू शकत नाहीत.',
   workingDaysInvalid: 'कामाचे दिवस 0 ते 31 दरम्यान असावेत.',
   required: 'ही माहिती आवश्यक आहे.',
-  usernameInvalid: 'वापरकर्ता नाव 3 ते 20 इंग्रजी अक्षरे/अंक असावे (उदा. teacher7).',
+  usernameInvalid: 'वापरकर्ता नाव 3 ते 20 इंग्रजी लहान अक्षरे/अंक असावे (उदा. jadhav7).',
   passwordShort: 'पासवर्ड किमान 6 अक्षरांचा असावा.',
   passwordMismatch: 'दोन्ही पासवर्ड सारखे नाहीत.',
   udiseInvalid: 'UDISE क्रमांक 11 अंकी असावा.',
