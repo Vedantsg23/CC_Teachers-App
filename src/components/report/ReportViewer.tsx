@@ -144,7 +144,7 @@ export function ReportViewer({
               {title}
             </h1>
           </div>
-          <span className="hidden text-[13.5px] text-muted sm:inline">{pageCount ? `${pageCount} पृष्ठे` : ''}</span>
+          <span className="hidden text-[13.5px] text-muted sm:inline">{pageCount ? `${pageCount} ${pageCount === 1 ? 'पृष्ठ' : 'पृष्ठे'}` : ''}</span>
           <Button size="sm" variant="ghost" icon={zoom === 'fit' ? 'plus' : 'filter'} onClick={() => setZoom(zoom === 'fit' ? 'full' : 'fit')} aria-label={zoom === 'fit' ? 'मोठे करा' : 'स्क्रीनएवढे करा'}>
             {zoom === 'fit' ? '100%' : 'बसवा'}
           </Button>

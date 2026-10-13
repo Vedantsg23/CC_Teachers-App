@@ -66,8 +66,8 @@ There is **no backend**: this is a purely front-end, offline-first app. See [sec
 Requirements: **Node.js 20+** (22 recommended) and npm.
 
 ```bash
-git clone https://github.com/vaishaligadage/CC-APP.git
-cd CC-APP
+git clone https://github.com/Vedantsg23/CC-App.git
+cd CC-App
 npm install
 npm run dev          # http://localhost:5173  (service worker disabled in dev)
 ```

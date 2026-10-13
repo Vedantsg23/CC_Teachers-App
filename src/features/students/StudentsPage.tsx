@@ -135,15 +135,15 @@ export default function StudentsPage() {
                   <Link to={`/students/${s.id}`} className="block truncate text-[17px] font-semibold text-ink-deep hover:underline">
                     {s.fullName}
                   </Link>
-                  <div className="mt-0.5 grid grid-cols-2 gap-x-3 text-[14px] text-muted">
-                    <span>
+                  <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[14px] text-muted">
+                    <span className="whitespace-nowrap">
                       हजेरी क्र.: <b className="tabular text-text">{s.rollNo ?? '—'}</b>
                     </span>
-                    <span className="tabular">{fmtDate(s.dob) || '—'}</span>
-                    <span>
+                    <span className="whitespace-nowrap">
                       रजि. क्र.: <b className="tabular text-text">{s.regNo || '—'}</b>
                     </span>
-                    <span>
+                    <span className="tabular whitespace-nowrap">{fmtDate(s.dob) || '—'}</span>
+                    <span className="whitespace-nowrap">
                       {GENDER_LABEL[s.gender]}
                       {s.category ? `, ${categoryShort(s.category)}` : ''}
                     </span>
