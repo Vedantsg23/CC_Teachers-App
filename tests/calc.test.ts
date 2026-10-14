@@ -5,12 +5,14 @@ import {
   combineAnnual,
   gradeDistribution,
   gradeFor,
+  groupGradeTable,
   groupResult,
   resultSummary,
   subjectTermResult,
   sumTools,
 } from '../src/lib/calc';
 import { defaultConfig, defaultGrades, distributeFormative, distributeSummative } from '../src/lib/defaults';
+import { casteGroupOf } from '../src/lib/labels';
 import type { Assessment, ClassConfig, Student } from '../src/lib/types';
 
 const cfg7: ClassConfig = defaultConfig(7);
@@ -163,6 +165,26 @@ describe('result rules (निकाल)', () => {
     const rows = groupResult(students, results, 1, (s) => s.category);
     const obc = rows.find((r) => r.key === 'OBC')!;
     expect(obc).toMatchObject({ boys: 1, girls: 1, total: 2, appeared: 2, pass: 1, passPct: 50 });
+  });
+
+  it('जातीनिहाय / श्रेणीनिहाय संकलन: strength, assessed and overall grades per group', () => {
+    const extra = [...students, student('e', 'F', 'NTC'), student('f', 'M', '')];
+    const tab = groupGradeTable(cfg7, extra, results, 1, (s) => casteGroupOf(s.category));
+    const obc = tab.get('OBC')!;
+    expect(obc.pat).toMatchObject({ M: 1, F: 1, T: 2 });
+    expect(obc.appeared.T).toBe(2);
+    expect(obc.grades['ब-1'].M).toBe(1); // 80 % overall
+    expect(obc.grades['इ-1'].F).toBe(1); // 30 % overall
+    const sc = tab.get('SC')!;
+    expect(sc.pat.T).toBe(2);
+    expect(sc.grades['अ-1'].F).toBe(1);
+    // NT-C goes to भटक्या जाती, a blank प्रवर्ग to "नोंद नाही"; neither has marks
+    expect(tab.get('NT')!.pat.F).toBe(1);
+    expect(tab.get('NT')!.appeared.T).toBe(0);
+    expect(tab.get('NONE')!.pat.M).toBe(1);
+    expect(casteGroupOf('VJA')).toBe('VJ');
+    expect(casteGroupOf('SBC')).toBe('OBC');
+    expect(casteGroupOf('EWS')).toBe('OPEN');
   });
 });
 

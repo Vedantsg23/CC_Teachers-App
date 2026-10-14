@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { attendanceTotals, type ClassBundle } from '../../app/data';
 import { gradeDistribution } from '../../lib/calc';
 import { termOfMonth, yearMonths } from '../../lib/format';
-import { standardLabel, TERM_LABEL } from '../../lib/labels';
+import { standardLabel, TERM_LABEL, toDevDigits } from '../../lib/labels';
 import type { ClassConfig, ClassRoom, LcTemplate, Period, School, Student, Term } from '../../lib/types';
 import type { SignItem } from '../../components/report/Report';
 
@@ -70,6 +70,45 @@ export function signs(ctx: ReportCtx, withParent = false): SignItem[] {
   ];
   if (withParent) out.push({ label: r.parentSignLabel, name: '' });
   return out;
+}
+
+/** Signature row of the official formats: वर्गशिक्षक … गटशिक्षणाधिकारी (first `count`). */
+export function officialSigns(ctx: ReportCtx, count: 3 | 4 | 5): SignItem[] {
+  const s = ctx.school;
+  return [
+    { label: 'वर्गशिक्षक', name: ctx.teacher },
+    { label: 'मुख्याध्यापक', name: s.headmaster },
+    { label: 'केंद्रप्रमुख', name: s.centreHead ?? '' },
+    { label: 'विस्तार अधिकारी', name: s.extOfficer ?? '' },
+    { label: 'गटशिक्षणाधिकारी', name: s.blockOfficer ?? '' },
+  ].slice(0, count);
+}
+
+/** Number/grade printer for the result & संकलन reports: १२३ or 123 per settings. */
+export function digitPrinter(ctx: ReportCtx): (v: string | number | null | undefined) => string {
+  const mr = ctx.cfg.report.marathiDigits !== false;
+  return (v) => (v === null || v === undefined || v === '' ? '' : mr ? toDevDigits(String(v)) : String(v));
+}
+
+/** "2026-27" → "2026-2027" */
+export function fullYear(year: string): string {
+  const y = Number(year.slice(0, 4));
+  return Number.isFinite(y) ? `${y}-${y + 1}` : year;
+}
+
+/** "शाळा : … इयत्ता : … केंद्र : … बीट : … तालुका : … जिल्हा : …" (empty parts skipped). */
+export function schoolLine(ctx: ReportCtx, d: (v: string) => string): { k: string; v: string }[] {
+  const s = ctx.school;
+  return [
+    { k: 'शाळा', v: s.name },
+    { k: 'इयत्ता', v: `${standardLabel(ctx.cls.standard)} ${ctx.cls.section}`.trim() },
+    { k: 'केंद्र', v: s.centre },
+    { k: 'बीट', v: s.beat ?? '' },
+    { k: 'तालुका', v: s.taluka },
+    { k: 'जिल्हा', v: s.district },
+  ]
+    .filter((p) => p.v.trim())
+    .map((p) => ({ k: p.k, v: d(p.v) }));
 }
 
 export function pickStudents(ctx: ReportCtx, opts: ReportOpts): Student[] {

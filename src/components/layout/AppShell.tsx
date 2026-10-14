@@ -38,8 +38,8 @@ const TEACHER_NAV: { group?: string; items: NavItem[] }[] = [
       { to: '/progress-card', label: 'प्रगती कार्ड', icon: 'progress' },
       { to: '/marksheet', label: 'वार्षिक गुणपत्रक', icon: 'marksheet' },
       { to: '/result', label: 'निकाल पत्रक', icon: 'trophy' },
-      { to: '/grade-result', label: 'श्रेणीवार निकाल', icon: 'bars' },
-      { to: '/category-result', label: 'जातनिहाय निकाल', icon: 'group' },
+      { to: '/grade-result', label: 'विषयनिहाय संकलन', icon: 'bars' },
+      { to: '/category-result', label: 'जातीनिहाय संकलन', icon: 'group' },
     ],
   },
   {

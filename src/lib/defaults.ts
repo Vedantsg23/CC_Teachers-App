@@ -200,6 +200,7 @@ export function defaultReportSettings(): ReportSettings {
     parentSignLabel: 'पालक स्वाक्षरी',
     showPageNumbers: true,
     showSchoolOnCards: true,
+    marathiDigits: true,
   };
 }
 

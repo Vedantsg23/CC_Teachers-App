@@ -114,7 +114,23 @@ export function PagedTable({
       used += h;
     });
     pages.push(cur);
-    const footerOwnPage = !!foot && footerH > 0 && used + footerH > capacity;
+    let footerOwnPage = false;
+    if (foot && footerH > 0 && used + footerH > capacity) {
+      // The footer (summary/signatures) does not fit under the last rows: carry
+      // up to three rows over with it, so the signatures are never alone on a page.
+      const last = pages[pages.length - 1];
+      const carry: number[] = [];
+      let carryH = 0;
+      while (last.length > 1 && carry.length < 3) {
+        const i = last[last.length - 1];
+        if (carryH + heights[i] + footerH > capacity) break;
+        carry.unshift(i);
+        last.pop();
+        carryH += heights[i];
+      }
+      if (carry.length) pages.push(carry);
+      else footerOwnPage = true;
+    }
     const next: Split = { pages, footerOwnPage };
     setSplit((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   });
@@ -191,9 +207,9 @@ export interface SignItem {
   name?: string;
 }
 
-export function Signatures({ items, compact, style }: { items: SignItem[]; compact?: boolean; style?: CSSProperties }) {
+export function Signatures({ items, compact, style, className = '' }: { items: SignItem[]; compact?: boolean; style?: CSSProperties; className?: string }) {
   return (
-    <div className={`sign-row ${compact ? 'compact' : ''}`} style={style}>
+    <div className={`sign-row ${compact ? 'compact' : ''} ${className}`} style={style}>
       {items.map((s, i) => (
         <div className="sign" key={`${s.label}-${i}`}>
           <div className="lbl">{s.label}</div>

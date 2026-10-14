@@ -373,6 +373,53 @@ export function groupResult(
   return [...rows.values()];
 }
 
+export interface GroupGradeRow {
+  key: string;
+  /** पटसंख्या — every student of the group. */
+  pat: GenderCount;
+  /** मूल्यमापनासाठी उपस्थित — students with any marks in the period. */
+  appeared: GenderCount;
+  /** Students per overall grade of the period. */
+  grades: Record<string, GenderCount>;
+}
+
+/**
+ * जातीनिहाय / श्रेणीनिहाय संकलन: per group, the strength, the students
+ * assessed and how many got each overall grade — boys and girls separately.
+ */
+export function groupGradeTable(
+  cfg: ClassConfig,
+  students: Student[],
+  results: Map<string, StudentResults>,
+  period: Period,
+  keyOf: (s: Student) => string,
+): Map<string, GroupGradeRow> {
+  const out = new Map<string, GroupGradeRow>();
+  const row = (key: string) => {
+    let r = out.get(key);
+    if (!r) {
+      r = { key, pat: zero(), appeared: zero(), grades: {} };
+      for (const b of cfg.grades) r.grades[b.label] = zero();
+      out.set(key, r);
+    }
+    return r;
+  };
+  for (const st of students) {
+    const r = row(keyOf(st));
+    bump(r.pat, st.gender);
+    const res = results.get(st.id);
+    if (!res) continue;
+    const pr = pickPeriod(res, period);
+    if (pr.status === 'absent') continue;
+    bump(r.appeared, st.gender);
+    if (pr.grade) {
+      if (!r.grades[pr.grade]) r.grades[pr.grade] = zero();
+      bump(r.grades[pr.grade], st.gender);
+    }
+  }
+  return out;
+}
+
 /** Share of expected assessment entries (student × subject × type) that have marks. */
 export function entryCompletion(
   cfg: ClassConfig,

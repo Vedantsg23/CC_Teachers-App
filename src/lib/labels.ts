@@ -113,6 +113,30 @@ export const CATEGORIES: { code: string; label: string; short: string }[] = [
   { code: 'OPEN', label: 'खुला (Open)', short: 'खुला' },
 ];
 
+/**
+ * जात संवर्ग groups used by the जातीनिहाय संकलन तक्ता (order as printed).
+ * Students without a प्रवर्ग fall into "नोंद नाही".
+ */
+export const CASTE_GROUPS: { key: string; label: string; codes: string[] }[] = [
+  { key: 'SC', label: 'अनुसूचित जाती', codes: ['SC'] },
+  { key: 'ST', label: 'अनुसूचित जमाती', codes: ['ST'] },
+  { key: 'NT', label: 'भटक्या जाती', codes: ['NTB', 'NTC', 'NTD'] },
+  { key: 'VJ', label: 'विमुक्त जाती', codes: ['VJA'] },
+  { key: 'OBC', label: 'इतर मागास', codes: ['OBC', 'SBC', 'SEBC'] },
+  { key: 'OPEN', label: 'बिगर मागास', codes: ['OPEN', 'EWS'] },
+];
+export const NO_GROUP = { key: 'NONE', label: 'नोंद नाही' };
+
+export function casteGroupOf(category: string): string {
+  return CASTE_GROUPS.find((g) => g.codes.includes(category))?.key ?? NO_GROUP.key;
+}
+
+/** "6 वी", "1 ली", "2 री", "4 थी" (digits as given). */
+export function standardNum(n: number): string {
+  const suffix = n === 1 ? 'ली' : n === 2 || n === 3 ? 'री' : n === 4 ? 'थी' : 'वी';
+  return `${n} ${suffix}`;
+}
+
 export function categoryLabel(code: string): string {
   return CATEGORIES.find((c) => c.code === code)?.label ?? code;
 }

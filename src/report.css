@@ -194,6 +194,277 @@
   margin-top: 0.8mm;
 }
 
+/* official signature rows: title above, name below */
+.sign-row.official .sign {
+  min-width: 0;
+}
+.sign-row.official .lbl {
+  font-weight: 700;
+  font-size: 9.5pt;
+}
+.sign-row.official .who {
+  font-size: 8.5pt;
+}
+
+/* ------------------------------------------------------------------ */
+/* Student sheets: नोंदपत्र (both सत्र) and वर्णनात्मक नोंद वही         */
+/* ------------------------------------------------------------------ */
+.sh-head {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 0.75pt solid var(--rb);
+  border-left: 0.75pt solid var(--rb);
+  font-size: 9pt;
+  margin-bottom: 1.6mm;
+}
+.sh-head td {
+  border-right: 0.75pt solid var(--rb);
+  border-bottom: 0.75pt solid var(--rb);
+  padding: 0.8mm 1.6mm;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.sh-head td.sh-wide {
+  width: 100%;
+  white-space: normal;
+}
+.sh-head td.sh-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 11.5pt;
+  background: var(--rh);
+}
+.sh-head td.sh-photo {
+  width: 19mm;
+  min-width: 19mm;
+  height: 19mm;
+  padding: 0.6mm;
+  text-align: center;
+}
+.sh-head td.sh-photo img {
+  display: block;
+  width: 16.5mm;
+  height: 19mm;
+  margin: 0 auto;
+  object-fit: cover;
+}
+
+.rt.np {
+  font-size: 7.6pt;
+  line-height: 1.15;
+}
+.rt.np th,
+.rt.np td {
+  padding: 0.42mm 0.3mm;
+}
+.rt.np th {
+  font-size: 7pt;
+}
+.rt.np th.vt-cell {
+  padding: 0.8mm 0.1mm;
+}
+.rt.np th.np-term {
+  font-size: 9pt;
+  background: #c9d6e8;
+}
+.rt.np tr.np-num th {
+  font-size: 6.6pt;
+}
+.rt.np td.np-subj {
+  font-weight: 700;
+  font-size: 7.2pt;
+  min-width: 16mm;
+}
+.rt.np td.np-k {
+  font-size: 6.5pt;
+  white-space: nowrap;
+}
+.rt.np tr.np-max td {
+  color: #333333;
+}
+.rt.np td.np-grade {
+  font-size: 7.8pt;
+}
+.rt.np td.np-sumcell {
+  padding: 0.6mm 1.2mm;
+  text-align: left;
+}
+.np-sum {
+  font-size: 7.4pt;
+  line-height: 1.5;
+  text-align: left;
+}
+.np-sum-line .np-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1mm 6mm;
+  margin-top: 1mm;
+}
+.sign-row.np-sign {
+  margin-top: 6.5mm;
+  margin-bottom: 2mm;
+  font-size: 9pt;
+}
+
+.rt.rb {
+  font-size: 9.5pt;
+}
+.rt.rb th {
+  font-size: 10pt;
+  padding: 1.3mm 1mm;
+}
+.rt.rb td {
+  padding: 1mm 1.6mm;
+}
+.rt.rb td.rb-area {
+  font-size: 9.5pt;
+}
+.rt.rb td.rb-text {
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------------ */
+/* Final result reports: निकाल पत्रक, संकलन तक्ते                         */
+/* ------------------------------------------------------------------ */
+.fr-head {
+  text-align: center;
+  margin-bottom: 2mm;
+}
+.fr-title {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 14mm;
+  font-weight: 700;
+  font-size: 13pt;
+  line-height: 1.3;
+}
+.fr-title.big {
+  font-size: 18pt;
+}
+.fr-title .fr-year {
+  font-size: 12pt;
+}
+.fr-sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5mm 5mm;
+  font-size: 10pt;
+  font-weight: 700;
+  margin-top: 0.6mm;
+}
+.rt.fr {
+  table-layout: fixed;
+  font-size: 6.6pt;
+  line-height: 1.1;
+}
+.rt.fr th,
+.rt.fr td {
+  padding: 0.35mm 0.1mm;
+}
+.rt.fr th {
+  font-size: 6.2pt;
+}
+.rt.fr th.fr-subj {
+  font-size: 8.5pt;
+}
+.rt.fr th.fr-term {
+  font-size: 6.2pt;
+}
+.rt.fr tr.fr-cap th {
+  font-size: 5pt;
+  font-weight: 600;
+  line-height: 1.05;
+}
+.rt.fr tr.fr-max th {
+  font-size: 5.6pt;
+  font-weight: 600;
+  background: #ffffff;
+}
+.rt.fr td {
+  font-weight: 700;
+}
+.rt.fr td.fr-name {
+  font-size: 6.3pt;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.rt.fr .fr-xs {
+  font-size: 5.6pt;
+}
+.rt.fr td.fr-g {
+  white-space: nowrap;
+}
+.sign-row.fr-sign {
+  margin-top: 11mm;
+}
+
+.rt.fs {
+  table-layout: fixed;
+  font-size: 9.5pt;
+}
+.rt.fs th {
+  font-size: 9pt;
+}
+.rt.fs th.fs-big {
+  font-size: 13pt;
+}
+.rt.fs th.fs-grade {
+  font-size: 11pt;
+}
+.rt.fs tr.fs-mf th {
+  font-size: 8pt;
+}
+.rt.fs td {
+  padding: 0.4mm 0.4mm;
+}
+.rt.fs td.fs-subj {
+  font-weight: 700;
+  font-size: 11pt;
+}
+.rt.fs td.fs-term {
+  font-size: 7.5pt;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fc-term {
+  text-align: center;
+  font-weight: 700;
+  font-size: 11pt;
+  margin: 1.2mm 0 0.8mm;
+}
+.rt.fc {
+  table-layout: fixed;
+  font-size: 9pt;
+}
+.rt.fc th {
+  font-size: 7pt;
+}
+.rt.fc th.fc-big {
+  font-size: 11pt;
+}
+.rt.fc th.fc-sm {
+  font-size: 6.5pt;
+  line-height: 1.15;
+}
+.rt.fc tr.fc-mf th {
+  font-size: 6.6pt;
+  padding: 0.6mm 0.1mm;
+}
+.rt.fc td {
+  padding: 0.9mm 0.2mm;
+}
+.rt.fc td.fc-group {
+  font-weight: 700;
+  font-size: 9pt;
+  white-space: nowrap;
+  padding: 0.9mm 1mm;
+}
+
 .page-no {
   position: absolute;
   left: 0;

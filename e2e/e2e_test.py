@@ -338,14 +338,23 @@ def main():
         check('restore brings back deleted data', True)
 
         # ---------------- every report renders + PDF ----------------
-        keys = ['cover', 'index', 'student-list', 'attendance', 'formative', 'summative', 'subject-wise', 'student-wise', 'class-register', 'class-ab', 'remarks', 'progress-card', 'annual-marksheet', 'result-sheet', 'grade-wise', 'category-wise']
+        keys = ['cover', 'index', 'student-list', 'attendance', 'formative', 'summative', 'subject-wise', 'student-wise', 'class-register', 'class-ab', 'remarks', 'progress-card', 'annual-marksheet', 'result-sheet', 'grade-wise', 'category-wise', 'result-summary']
+        page_text = {}
         for k in keys:
             go(pg, f'/reports/{k}')
             pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
             pg.wait_for_timeout(500)
+            page_text[k] = pg.locator('.report-page-wrap').first.inner_text()
             f = download(pg, 'PDF तयार करा', os.path.join(OUT, f'report-{k}.pdf'))
             n = pdf_pages(f)
             check(f'report "{k}" PDF', n >= 1, f'{n} page(s)')
+        both = lambda k: 'प्रथम सत्र' in page_text[k] and 'द्वितीय सत्र' in page_text[k]
+        check('नोंदपत्र: both सत्र on one page per student', both('student-wise') and 'प्राप्त गुण' in page_text['student-wise'] and 'गुण पैकी' in page_text['student-wise'])
+        check('वर्णनात्मक नोंद वही: both सत्र side by side', both('remarks') and 'सुधारणा आवश्यक' in page_text['remarks'])
+        check('निकाल पत्रक shows both सत्र per subject', both('result-sheet') and 'संवर्ग' in page_text['result-sheet'])
+        check('विषयनिहाय and जातीनिहाय संकलन तक्ते show both सत्र', both('grade-wise') and both('category-wise') and 'अनुसूचित जाती' in page_text['category-wise'])
+        idx = page_text['index']
+        check('अनुक्रमणिका: only school, इयत्ता, year, अनुक्रमांक, name, परीक्षा क्रमांक', all(w in idx for w in ['शाळेचे नाव', 'इयत्ता', 'शैक्षणिक वर्ष', 'अनुक्रमांक', 'परीक्षा क्रमांक', STUDENT]) and not any(w in idx for w in ['जन्मतारीख', 'रजि', 'युडायस', 'पृष्ठ क्र']), idx[:200].replace('\n', ' '))
 
         go(pg, '/reports/subject-wise?term=1&subject=marathi&orientation=landscape')
         pg.wait_for_selector('.report-page-wrap.landscape .a4', timeout=20000)

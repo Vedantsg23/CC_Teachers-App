@@ -41,7 +41,11 @@ function SchoolAdmin() {
           <TextField label="तालुका" value={s.taluka} onChange={(v) => setS({ ...s, taluka: v })} />
           <TextField label="जिल्हा" value={s.district} onChange={(v) => setS({ ...s, district: v })} />
           <TextField label="केंद्र" value={s.centre} onChange={(v) => setS({ ...s, centre: v })} />
+          <TextField label="बीट" value={s.beat ?? ''} onChange={(v) => setS({ ...s, beat: v })} />
           <TextField label="मुख्याध्यापकाचे नाव" value={s.headmaster} onChange={(v) => setS({ ...s, headmaster: v })} />
+          <TextField label="केंद्रप्रमुख (नाव)" value={s.centreHead ?? ''} onChange={(v) => setS({ ...s, centreHead: v })} />
+          <TextField label="विस्तार अधिकारी (नाव)" value={s.extOfficer ?? ''} onChange={(v) => setS({ ...s, extOfficer: v })} />
+          <TextField label="गटशिक्षणाधिकारी (नाव)" value={s.blockOfficer ?? ''} onChange={(v) => setS({ ...s, blockOfficer: v })} />
           <TextField label="माध्यम" value={s.medium} onChange={(v) => setS({ ...s, medium: v })} />
           <TextField label="मान्यता क्रमांक" value={s.recognitionNo} onChange={(v) => setS({ ...s, recognitionNo: v })} />
           <TextField label="दूरध्वनी" value={s.phone} onChange={(v) => setS({ ...s, phone: v })} inputMode="tel" />

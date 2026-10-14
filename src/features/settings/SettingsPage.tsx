@@ -89,10 +89,17 @@ function ClassSection() {
           <TextField label="तालुका" value={s.taluka} onChange={(v) => setS({ ...s, taluka: v })} />
           <TextField label="जिल्हा" value={s.district} onChange={(v) => setS({ ...s, district: v })} />
           <TextField label="केंद्र" value={s.centre} onChange={(v) => setS({ ...s, centre: v })} />
+          <TextField label="बीट" value={s.beat ?? ''} onChange={(v) => setS({ ...s, beat: v })} />
           <TextField label="मुख्याध्यापकाचे नाव" value={s.headmaster} onChange={(v) => setS({ ...s, headmaster: v })} />
           <TextField label="माध्यम" value={s.medium} onChange={(v) => setS({ ...s, medium: v })} />
           <TextField label="मान्यता क्रमांक" value={s.recognitionNo} onChange={(v) => setS({ ...s, recognitionNo: v })} />
           <TextField label="शाळेचा पत्ता" value={s.address} onChange={(v) => setS({ ...s, address: v })} className="sm:col-span-2" />
+        </div>
+        <p className="mt-5 mb-2 text-[14.5px] font-semibold text-ink-deep">निकाल पत्रक व संकलन तक्त्यांवरील स्वाक्षऱ्या</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <TextField label="केंद्रप्रमुख (नाव)" value={s.centreHead ?? ''} onChange={(v) => setS({ ...s, centreHead: v })} />
+          <TextField label="विस्तार अधिकारी (नाव)" value={s.extOfficer ?? ''} onChange={(v) => setS({ ...s, extOfficer: v })} />
+          <TextField label="गटशिक्षणाधिकारी (नाव)" value={s.blockOfficer ?? ''} onChange={(v) => setS({ ...s, blockOfficer: v })} />
         </div>
         <div className="mt-4">
           <Button
@@ -461,6 +468,12 @@ function ReportSection() {
       <div className="mt-4 grid gap-3">
         <Checkbox label="अनेक पानांच्या अहवालांवर पृष्ठ क्रमांक छापा" checked={r.showPageNumbers} onChange={(v) => setR({ ...r, showPageNumbers: v })} />
         <Checkbox label="प्रगती कार्डावर शाळेचे नाव छापा" checked={r.showSchoolOnCards} onChange={(v) => setR({ ...r, showSchoolOnCards: v })} />
+        <Checkbox
+          label="निकाल पत्रक व संकलन तक्त्यांत मराठी अंक (१, २, ३) छापा"
+          hint="न निवडल्यास इंग्रजी अंक (1, 2, 3) छापले जातील."
+          checked={r.marathiDigits !== false}
+          onChange={(v) => setR({ ...r, marathiDigits: v })}
+        />
       </div>
       <p className="mt-3 text-[14px] text-muted">सर्व PDF मध्ये Noto Sans Devanagari (SIL Open Font License) हा युनिकोड मराठी फॉन्ट वापरला जातो, त्यामुळे कोणत्याही मोबाईल/संगणकावर अक्षरे तुटत नाहीत.</p>
       <div className="mt-4">

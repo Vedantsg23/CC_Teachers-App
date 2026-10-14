@@ -43,7 +43,11 @@ export interface School {
   district: string;
   address: string;
   centre: string; // केंद्र
+  beat?: string; // बीट
   headmaster: string;
+  centreHead?: string; // केंद्रप्रमुख (name, for signatures)
+  extOfficer?: string; // विस्तार अधिकारी (name)
+  blockOfficer?: string; // गटशिक्षणाधिकारी (name)
   medium: string; // माध्यम
   board: string;
   recognitionNo: string; // मान्यता क्रमांक
@@ -154,6 +158,8 @@ export interface ReportSettings {
   parentSignLabel: string;
   showPageNumbers: boolean;
   showSchoolOnCards: boolean;
+  /** Print १२३ instead of 123 in the result sheet and the संकलन तक्ते (default: yes). */
+  marathiDigits?: boolean;
 }
 
 export interface ClassConfig {

@@ -11,7 +11,6 @@ import {
   Emblem,
   GradeDistTable,
   periodMonths,
-  pickStudents,
   presentDays,
   schoolCell,
   signs,
@@ -70,37 +69,45 @@ export function CoverReport({ ctx }: { ctx: ReportCtx }) {
 /* ------------------------------------------------------------------ */
 /* अनुक्रमणिका                                                          */
 /* ------------------------------------------------------------------ */
-export function IndexReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
+/** Only शाळेचे नाव, इयत्ता, शैक्षणिक वर्ष and अनुक्रमांक / नाव / परीक्षा क्रमांक. */
+export function IndexReport({ ctx }: { ctx: ReportCtx }) {
   const header = (
     <CceHeader
       title="अनुक्रमणिका"
       lines={[
-        [udiseCell(ctx), termText(opts.term), yearCell(ctx)],
-        [schoolCell(ctx), classCell(ctx)],
+        [
+          <>
+            शाळेचे नाव : <b>{ctx.school.name}</b>
+          </>,
+        ],
+        [
+          <>
+            इयत्ता : <b>{`${standardLabel(ctx.cls.standard)} ${ctx.cls.section}`.trim()}</b>
+          </>,
+          <>
+            शैक्षणिक वर्ष : <b>{ctx.cls.year}</b>
+          </>,
+        ],
       ]}
     />
   );
   return (
     <PagedTable
       header={header}
-      tableClassName="rt big"
-      emptyColSpan={5}
+      tableClassName="rt big tall"
+      emptyColSpan={3}
       thead={
         <tr>
-          <th style={{ width: '14mm' }}>अ.नं</th>
+          <th style={{ width: '26mm' }}>अनुक्रमांक</th>
           <th>विद्यार्थ्याचे नाव</th>
-          <th style={{ width: '26mm' }}>रजि.नं.</th>
-          <th style={{ width: '32mm' }}>जन्मतारीख</th>
-          <th style={{ width: '20mm' }}>पृष्ठ क्र.</th>
+          <th style={{ width: '36mm' }}>परीक्षा क्रमांक</th>
         </tr>
       }
       rows={ctx.b.students.map((s, i) => (
         <tr key={s.id}>
           <td>{i + 1}</td>
           <td className="l">{s.fullName}</td>
-          <td>{s.regNo}</td>
-          <td>{fmtDate(s.dob)}</td>
-          <td>{i + 1}</td>
+          <td>{s.rollNo ?? ''}</td>
         </tr>
       ))}
     />
@@ -284,150 +291,6 @@ export function SubjectWiseReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportO
       {subjects.map((s) => (
         <SubjectSheet key={s.id} ctx={ctx} term={opts.term} subject={s} orientation={opts.orientation} />
       ))}
-    </>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* विद्यार्थीवार CCE                                                     */
-/* ------------------------------------------------------------------ */
-export function StudentWiseReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
-  const { cfg, b } = ctx;
-  const term = opts.term;
-  const nF = cfg.fTools.length;
-  const nS = cfg.sParts.length;
-  return (
-    <>
-      {pickStudents(ctx, opts).map((st) => {
-        const r = b.results.get(st.id);
-        return (
-          <ReportPage key={st.id}>
-            <div className="page-body" style={{ display: 'flex', flexDirection: 'column' }}>
-              <CceHeader
-                lines={[
-                  [
-                    <>
-                      नाव: <b>{st.fullName}</b>
-                    </>,
-                    yearCell(ctx),
-                  ],
-                  [
-                    classCell(ctx),
-                    <>
-                      रोल नं.: <b>{st.rollNo ?? ''}</b>
-                    </>,
-                    termText(term),
-                  ],
-                ]}
-              />
-              <table className="rt" style={{ fontSize: '8.6pt' }}>
-                <thead>
-                  <tr>
-                    <th rowSpan={3} style={{ width: '8mm' }}>
-                      अ. नं
-                    </th>
-                    <th colSpan={2} rowSpan={2}>
-                      तपशील
-                    </th>
-                    <th colSpan={nF + 1}>आकारिक (अ)</th>
-                    <th colSpan={nS + 1}>संकलित (ब)</th>
-                    <th rowSpan={3} className="vt-cell">
-                      <VT>अ+ब</VT>
-                    </th>
-                    <th rowSpan={3} className="vt-cell">
-                      <VT>शे.गुण</VT>
-                    </th>
-                    <th rowSpan={3} className="vt-cell">
-                      <VT>श्रेणी</VT>
-                    </th>
-                  </tr>
-                  <tr>
-                    {cfg.fTools.map((t) => (
-                      <th key={t.key} className="vt-cell">
-                        <VT>{t.label}</VT>
-                      </th>
-                    ))}
-                    <th rowSpan={2} className="vt-cell">
-                      <VT>एकूण</VT>
-                    </th>
-                    {cfg.sParts.map((t) => (
-                      <th key={t.key} rowSpan={2} className="vt-cell">
-                        <VT>{t.label}</VT>
-                      </th>
-                    ))}
-                    <th rowSpan={2} className="vt-cell">
-                      <VT>एकूण</VT>
-                    </th>
-                  </tr>
-                  <tr>
-                    <th>विषय</th>
-                    <th className="sm">गुण</th>
-                    {cfg.fTools.map((t, i) => (
-                      <th key={t.key}>{i + 1}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {cfg.subjects.map((subj, si) => {
-                    const w = cfg.weights[String(term) as '1' | '2']?.[subj.id];
-                    const d = r?.details[String(term) as '1' | '2'][subj.id];
-                    const fr = b.idx.get(assessmentId(st.id, subj.id, term, 'F'));
-                    const sr = b.idx.get(assessmentId(st.id, subj.id, term, 'S'));
-                    const hasS = (d?.s.used ?? 0) > 0;
-                    return [
-                      <tr key={`${subj.id}-a`}>
-                        <td rowSpan={2}>{si + 1}</td>
-                        <td rowSpan={2} style={{ minWidth: '22mm' }}>
-                          {subj.short}
-                        </td>
-                        <td className="xs">प्राप्त</td>
-                        {cfg.fTools.map((t) => (
-                          <td key={t.key}>{w?.F[t.key] ? dash(n(fr?.scores[t.key])) : '-'}</td>
-                        ))}
-                        <td className="b">{dash(n(d?.fObt))}</td>
-                        {hasS ? (
-                          <>
-                            {cfg.sParts.map((t) => (
-                              <td key={t.key}>{w?.S[t.key] ? dash(n(sr?.scores[t.key])) : '-'}</td>
-                            ))}
-                            <td className="b">{dash(n(d?.sObt))}</td>
-                          </>
-                        ) : (
-                          <td colSpan={nS + 1} rowSpan={2} />
-                        )}
-                        <td className="b">{dash(n(d?.total))}</td>
-                        <td rowSpan={2}>{dash(fmtPct(d?.pct))}</td>
-                        <td rowSpan={2} className="b">
-                          {dash(d?.grade)}
-                        </td>
-                      </tr>,
-                      <tr key={`${subj.id}-b`}>
-                        <td className="xs">पैकी</td>
-                        {cfg.fTools.map((t) => (
-                          <td key={t.key}>{dash(w?.F[t.key] || '')}</td>
-                        ))}
-                        <td>{dash(d?.fMax || '')}</td>
-                        {hasS ? (
-                          <>
-                            {cfg.sParts.map((t) => (
-                              <td key={t.key}>{dash(w?.S[t.key] || '')}</td>
-                            ))}
-                            <td>{dash(d?.sMax || '')}</td>
-                          </>
-                        ) : null}
-                        <td>{dash(d?.max || '')}</td>
-                      </tr>,
-                    ];
-                  })}
-                </tbody>
-              </table>
-              <div style={{ marginTop: 'auto' }}>
-                <Signatures items={signs(ctx)} />
-              </div>
-            </div>
-          </ReportPage>
-        );
-      })}
     </>
   );
 }
