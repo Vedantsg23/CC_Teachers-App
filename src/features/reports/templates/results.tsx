@@ -1,118 +1,13 @@
-/** Remarks, progress card, annual marksheet and result reports. */
-import { pickPeriod, resultSummary, round2, type StudentResults } from '../../../lib/calc';
+/** Annual marksheet and the result summary. */
+import { pickPeriod, resultSummary, round2 } from '../../../lib/calc';
 import { fmtDate, fmtNum, fmtPct } from '../../../lib/format';
-import { GENDER_LABEL, periodLabel, SPECIAL_AREAS, standardLabel, TERM_LABEL } from '../../../lib/labels';
-import type { Period, Student, Term } from '../../../lib/types';
+import { GENDER_LABEL, periodLabel, standardLabel } from '../../../lib/labels';
+import type { Period } from '../../../lib/types';
 import { CceHeader, PagedTable, ReportPage, Signatures } from '../../../components/report/Report';
-import { classCell, dash, pickStudents, presentDays, schoolCell, signs, termMonths, udiseCell, yearCell, yearMonthsOf, type ReportCtx, type ReportOpts } from '../common';
+import { classCell, dash, pickStudents, presentDays, schoolCell, signs, udiseCell, yearCell, yearMonthsOf, type ReportCtx, type ReportOpts } from '../common';
 
 const n = (v: number | null | undefined) => (v === null || v === undefined ? '' : fmtNum(v));
 
-/* ------------------------------------------------------------------ */
-/* प्रगती कार्ड — प्रथम व द्वितीय सत्र शेजारी                               */
-/* ------------------------------------------------------------------ */
-function CardHalf({ ctx, st, term, r }: { ctx: ReportCtx; st: Student; term: Term; r: StudentResults | undefined }) {
-  const { cfg, b, school, cls } = ctx;
-  const tr = r ? pickPeriod(r, term) : null;
-  const rm = (area: string) => b.remarkMap.get(`${st.id}|${term}|${area}`)?.text ?? '';
-  const att = presentDays(ctx, st.id, termMonths(cls.year, term));
-  return (
-    <div className="pc-half">
-      <div className="pc-term">प्रगती कार्ड — {TERM_LABEL[term]}</div>
-      {cfg.report.showSchoolOnCards ? <div className="pc-school">{school.name}</div> : null}
-      <div className="rpt-meta">
-        <div>
-          नाव : <b>{st.fullName}</b>
-        </div>
-        <div>सन : {cls.year}</div>
-      </div>
-      <div className="rpt-meta">
-        <div>
-          इयत्ता: {standardLabel(cls.standard)}, तुकडी: {cls.section}
-        </div>
-        <div>
-          हजेरी क्रमांक : <b>{st.rollNo ?? ''}</b>
-        </div>
-        <div>
-          UDISE: <b>{school.udise}</b>
-        </div>
-      </div>
-      <table className="rt" style={{ marginTop: '1.5mm' }}>
-        <thead>
-          <tr>
-            <th style={{ width: '7mm' }}>अ.नं.</th>
-            <th style={{ width: '21mm' }}>विषय</th>
-            <th style={{ width: '12mm' }}>गुण</th>
-            <th style={{ width: '10mm' }}>श्रेणी</th>
-            <th>वर्णनात्मक नोंद</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cfg.subjects.map((s, i) => {
-            const x = tr?.subjects[s.id];
-            return (
-              <tr key={s.id}>
-                <td>{i + 1}</td>
-                <td className="l">{s.short}</td>
-                <td>{x?.entered ? `${n(x.total)}/${x.max}` : '-'}</td>
-                <td className="b">{dash(x?.grade)}</td>
-                <td className="l">{rm(s.id)}</td>
-              </tr>
-            );
-          })}
-          <tr className="total">
-            <td colSpan={2} className="l">
-              एकूण
-            </td>
-            <td>{tr?.entered ? `${n(tr.total)}/${tr.max}` : '-'}</td>
-            <td>{dash(tr?.grade)}</td>
-            <td className="l">{tr?.entered ? `टक्केवारी: ${fmtPct(tr.pct)}%` : ''}</td>
-          </tr>
-        </tbody>
-      </table>
-      <table className="rt" style={{ marginTop: '2mm' }}>
-        <tbody>
-          {SPECIAL_AREAS.map((a) => (
-            <tr key={a.key}>
-              <th className="l" style={{ width: '33mm', fontWeight: 700 }}>
-                {a.short}
-              </th>
-              <td className="l">{rm(a.key)}</td>
-            </tr>
-          ))}
-          <tr>
-            <th className="l" style={{ fontWeight: 700 }}>
-              उपस्थिती
-            </th>
-            <td className="l">{att.entered ? `${att.present} / ${att.working} दिवस` : ''}</td>
-          </tr>
-        </tbody>
-      </table>
-      <Signatures items={[{ label: 'शिक्षक स्वाक्षरी' }, { label: 'मुख्याध्यापक स्वाक्षरी' }, { label: 'पालक स्वाक्षरी' }]} />
-    </div>
-  );
-}
-
-export function ProgressCardReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
-  return (
-    <>
-      {pickStudents(ctx, opts).map((st) => {
-        const r = ctx.b.results.get(st.id);
-        return (
-          <ReportPage key={st.id} orientation="landscape">
-            <div className="pc-halves">
-              <CardHalf ctx={ctx} st={st} term={1} r={r} />
-              <CardHalf ctx={ctx} st={st} term={2} r={r} />
-            </div>
-          </ReportPage>
-        );
-      })}
-    </>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* वार्षिक गुणपत्रक                                                      */
 /* ------------------------------------------------------------------ */
 export function AnnualMarksheetReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
   const { cfg, b, school, cls } = ctx;

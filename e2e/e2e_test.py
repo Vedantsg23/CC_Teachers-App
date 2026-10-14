@@ -253,7 +253,7 @@ def main():
         pg.wait_for_timeout(800)
         shot(pg, '07-progress-card-preview', full=False)
         f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'progress-card-online.pdf'))
-        check('progress card PDF generated online', pdf_pages(f) == 1)
+        check('progress card PDF: मुखपृष्ठ + श्रेणी page', pdf_pages(f) == 2)
 
         # ---------------- offline ----------------
         ready = pg.evaluate("""async () => { const r = await navigator.serviceWorker.ready; return !!r.active; }""")
@@ -344,11 +344,13 @@ def main():
             go(pg, f'/reports/{k}')
             pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
             pg.wait_for_timeout(500)
-            page_text[k] = pg.locator('.report-page-wrap').first.inner_text()
+            page_text[k] = '\n'.join(pg.locator('.report-page-wrap').all_inner_texts())
             f = download(pg, 'PDF तयार करा', os.path.join(OUT, f'report-{k}.pdf'))
             n = pdf_pages(f)
             check(f'report "{k}" PDF', n >= 1, f'{n} page(s)')
         both = lambda k: 'प्रथम सत्र' in page_text[k] and 'द्वितीय सत्र' in page_text[k]
+        pc = page_text['progress-card']
+        check('प्रगती कार्ड: मुखपृष्ठ (माहिती + मासिक उपस्थिती) and page 2 (श्रेणी, 3 विशेष नोंदी, 3 स्वाक्षऱ्या)', all(w in pc for w in ['प्रगती पत्रक', 'विद्यार्थ्याची माहिती', 'मासिक उपस्थिती', 'विषयनिहाय श्रेणी', 'विशेष नोंद', 'आवड / छंद', 'सुधारणा आवश्यक', 'पालक स्वाक्षरी', 'वर्गशिक्षक स्वाक्षरी', 'मुख्याध्यापक स्वाक्षरी']))
         check('नोंदपत्र: both सत्र on one page per student', both('student-wise') and 'प्राप्त गुण' in page_text['student-wise'] and 'गुण पैकी' in page_text['student-wise'])
         check('वर्णनात्मक नोंद वही: both सत्र side by side', both('remarks') and 'सुधारणा आवश्यक' in page_text['remarks'])
         check('निकाल पत्रक shows both सत्र per subject', both('result-sheet') and 'संवर्ग' in page_text['result-sheet'])

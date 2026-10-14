@@ -4,7 +4,8 @@ import type { IconName } from '../../components/Icon';
 import type { Orientation } from '../../components/report/Report';
 import type { ReportCtx, ReportOpts } from './common';
 import { AttendanceReport, ClassABReport, ClassRegisterReport, CoverReport, IndexReport, StudentListReport, SubjectWiseReport, TypeSummaryReport } from './templates/registers';
-import { AnnualMarksheetReport, ProgressCardReport, ResultSummaryReport } from './templates/results';
+import { ProgressCardReport } from './templates/progress';
+import { AnnualMarksheetReport, ResultSummaryReport } from './templates/results';
 import { RemarksBookReport, StudentSheetReport } from './templates/sheets';
 import { CasteGradeSummaryReport, ResultBothTermsReport, SubjectGradeSummaryReport } from './templates/summaries';
 
@@ -35,7 +36,7 @@ export const REPORTS: ReportDef[] = [
   { key: 'class-ab', title: 'वर्गनिहाय CCE नोंद (अ–ब)', group: 'मूल्यमापन नोंदी', icon: 'table', orientation: 'landscape', opts: ['term'], desc: 'आकारिक, संकलित, एकूण (अ+ब), श्रेणी आणि श्रेणी सारांश', render: (c, o) => <ClassABReport ctx={c} opts={o} /> },
 
   { key: 'remarks', title: 'वर्णनात्मक नोंद वही', group: 'नोंदी व निकाल', icon: 'remarks', orientation: 'portrait', opts: ['student'], desc: 'प्रथम व द्वितीय सत्राच्या विषयवार नोंदी शेजारी — विशेष प्रगती, आवड/छंद, सुधारणा', render: (c, o) => <RemarksBookReport ctx={c} opts={o} /> },
-  { key: 'progress-card', title: 'प्रगती कार्ड', group: 'नोंदी व निकाल', icon: 'progress', orientation: 'landscape', opts: ['student'], desc: 'प्रथम व द्वितीय सत्र शेजारी — गुण, श्रेणी, नोंदी, स्वाक्षऱ्या', render: (c, o) => <ProgressCardReport ctx={c} opts={o} /> },
+  { key: 'progress-card', title: 'प्रगती कार्ड', group: 'नोंदी व निकाल', icon: 'progress', orientation: 'portrait', opts: ['student'], desc: 'मुखपृष्ठ: शाळा, इयत्ता, सन, विद्यार्थ्याची माहिती व मासिक उपस्थिती; दुसरे पान: दोन्ही सत्रांच्या विषयनिहाय श्रेणी, विशेष नोंदी व स्वाक्षऱ्या', render: (c, o) => <ProgressCardReport ctx={c} opts={o} /> },
   { key: 'annual-marksheet', title: 'वार्षिक गुणपत्रक', group: 'नोंदी व निकाल', icon: 'marksheet', orientation: 'portrait', opts: ['student'], desc: 'दोन्ही सत्रांचे गुण, वार्षिक गुण, टक्केवारी, श्रेणी व निकाल', render: (c, o) => <AnnualMarksheetReport ctx={c} opts={o} /> },
   { key: 'result-sheet', title: 'निकाल पत्रक (दोन्ही सत्रे)', group: 'नोंदी व निकाल', icon: 'trophy', orientation: 'landscape', opts: [], desc: 'प्रत्येक विषयाचे प्रथम व द्वितीय सत्राचे आकारिक, संकलित, एकूण व श्रेणी; जात/संवर्ग, उपस्थित दिवस', render: (c) => <ResultBothTermsReport ctx={c} /> },
   { key: 'grade-wise', title: 'विषयनिहाय / श्रेणीनिहाय संकलन तक्ता', group: 'नोंदी व निकाल', icon: 'bars', orientation: 'landscape', opts: [], desc: 'प्रत्येक विषयाचा प्रथम व द्वितीय सत्राचा पट व श्रेणीनिहाय मुलगे-मुली', render: (c) => <SubjectGradeSummaryReport ctx={c} /> },

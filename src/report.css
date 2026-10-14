@@ -583,6 +583,155 @@
   min-width: 0;
 }
 
+/* प्रगती पत्रक: cover + grades page */
+.pp-school {
+  text-align: center;
+  line-height: 1.35;
+  margin-top: 2mm;
+}
+.pp-org {
+  font-size: 11pt;
+}
+.pp-name {
+  font-size: 17pt;
+  font-weight: 700;
+}
+.pp-place {
+  font-size: 10pt;
+}
+.pp-title {
+  text-align: center;
+  font-size: 30pt;
+  font-weight: 700;
+  color: #1e3a6e;
+  line-height: 1.25;
+  margin-top: 7mm;
+}
+.pp-sub {
+  text-align: center;
+  font-size: 12pt;
+  margin-top: 0.5mm;
+}
+.pp-class {
+  display: flex;
+  justify-content: center;
+  gap: 12mm;
+  font-size: 13pt;
+  margin: 4mm 0 6mm;
+}
+.pp-box {
+  border: 0.75pt solid var(--rb);
+  margin-bottom: 6mm;
+}
+.pp-box-title,
+.pp-att-title,
+.pp-sec {
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: #1e3a6e;
+}
+.pp-box-title {
+  background: var(--rh);
+  color: #000000;
+  text-align: center;
+  padding: 1mm;
+  border-bottom: 0.75pt solid var(--rb);
+}
+.pp-info {
+  display: flex;
+  gap: 4mm;
+  padding: 2mm 3mm;
+}
+.pp-info table {
+  flex: 1;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 10.5pt;
+}
+.pp-info td {
+  padding: 1.2mm 1mm;
+  vertical-align: top;
+  border-bottom: 0.5pt dotted #8a8a8a;
+}
+.pp-info td.k {
+  width: 52mm;
+  white-space: nowrap;
+}
+.pp-info td.c {
+  width: 4mm;
+}
+.pp-info td.v {
+  font-weight: 700;
+}
+.pp-photo {
+  width: 30mm;
+  height: 36mm;
+  border: 0.75pt solid var(--rb);
+  flex: none;
+}
+.pp-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pp-att-title {
+  text-align: center;
+  margin-bottom: 1.2mm;
+}
+.rt.pp-att {
+  font-size: 10pt;
+}
+.rt.pp-att td {
+  padding: 1.15mm 2mm;
+}
+.pp-head2 {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  font-size: 10.5pt;
+  border-bottom: 0.75pt solid var(--rb);
+  padding-bottom: 1.5mm;
+  margin-bottom: 3mm;
+}
+.pp-sec {
+  margin: 3mm 0 1.2mm;
+}
+.rt.pp-grades {
+  font-size: 10.5pt;
+}
+.rt.pp-grades td {
+  padding: 1.25mm 2mm;
+}
+.rt.pp-grades td.pp-g {
+  font-size: 11pt;
+}
+.rt.pp-notes {
+  font-size: 10pt;
+}
+.rt.pp-notes td {
+  height: 19mm;
+  padding: 1.2mm 2mm;
+  vertical-align: top;
+}
+.rt.pp-notes td.b {
+  vertical-align: middle;
+}
+.rt.pp-sign td {
+  height: 16mm;
+  padding: 1mm 2mm;
+}
+.pp-who {
+  font-size: 8.5pt;
+  margin-top: 0.6mm;
+}
+.pp-legend {
+  margin-top: auto;
+  padding-top: 3mm;
+  font-size: 8pt;
+  color: #333333;
+}
+
 /* leaving certificate */
 .lc {
   font-size: 11pt;
