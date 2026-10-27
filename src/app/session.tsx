@@ -2,6 +2,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import * as auth from '../lib/auth';
+import { forgetPassword, linkLocalAccount, rememberedPassword } from '../lib/cloud/account';
+import { startAutoSync, stopAutoSync, syncAccount } from '../lib/cloud/sync';
 import { db } from '../lib/db';
 import * as repo from '../lib/repo';
 import type { AppMeta, ClassConfig, ClassRoom, School, User } from '../lib/types';
@@ -66,17 +68,57 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const u = authState?.user;
+    if (u) {
+      const cur = await db.users.get(u.id);
+      // send the last edits before leaving (other devices see them right away)
+      if (cur?.cloud) await Promise.race([syncAccount(cur.id), new Promise((r) => setTimeout(r, 8000))]);
+    }
+    stopAutoSync();
+    forgetPassword();
     await auth.logout();
     setAuth(null);
     setPhase('login');
     window.location.hash = '#/';
-  }, []);
+  }, [authState]);
 
   // If the account was disabled or the session row removed elsewhere, sign out.
   useEffect(() => {
     if (authState && liveUser === undefined) return; // still loading
     if (authState && liveUser && !liveUser.active) void signOut();
   }, [authState, liveUser, signOut]);
+
+  // online accounts: keep this device and the server in step while signed in
+  const syncAcct = phase === 'ready' && liveUser?.cloud && liveUser.role === 'teacher' ? liveUser.id : null;
+  useEffect(() => {
+    if (!syncAcct) return;
+    startAutoSync(syncAcct);
+    return () => stopAutoSync();
+  }, [syncAcct]);
+
+  // an account created without internet goes online once there is internet
+  const pendingId = phase === 'ready' && liveUser && !liveUser.cloud && liveUser.pendingPhone ? liveUser.id : null;
+  useEffect(() => {
+    if (!pendingId) return;
+    let busy = false;
+    const tryLink = async () => {
+      const u = await db.users.get(pendingId);
+      const pw = rememberedPassword(pendingId);
+      if (busy || !u?.pendingPhone || !pw || !navigator.onLine) return;
+      busy = true;
+      try {
+        await linkLocalAccount(pendingId, pw, u.pendingPhone);
+        await reloadAll();
+      } catch {
+        /* stays a device account; the banner offers to retry */
+      } finally {
+        busy = false;
+      }
+    };
+    void tryLink();
+    window.addEventListener('online', tryLink);
+    return () => window.removeEventListener('online', tryLink);
+  }, [pendingId, reloadAll]);
 
   const cls = liveClass ?? authState?.classRoom ?? null;
   const user = liveUser ?? authState?.user ?? null;

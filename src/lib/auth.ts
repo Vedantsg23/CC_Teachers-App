@@ -1,11 +1,18 @@
 /**
- * Accounts, first-time setup and sessions — all local (offline-first).
+ * Accounts, first-time setup and sessions (offline-first).
  *
- * - Passwords are stored only as PBKDF2-SHA256 hashes with a random salt.
- * - A session is a random token kept in sessionStorage (or localStorage when
- *   "मला लॉगिन ठेवा" is ticked); the token maps to a row in IndexedDB, and
- *   the class is always derived from the user record — never from storage.
+ * - Teacher accounts are online accounts (src/lib/cloud): the same login works
+ *   on any phone, tablet or computer, and the class data is synced. Logging in
+ *   still works offline on a device where the account was opened before.
+ * - Passwords are stored here only as PBKDF2-SHA256 hashes with a random salt.
+ * - A session is a random token in localStorage that maps to a row in
+ *   IndexedDB; it does not expire — it ends with "बाहेर पडा". The class is
+ *   always derived from the user record, never from storage.
  */
+import { api, CloudError, CloudUnavailable, cloudMessage } from './cloud/api';
+import { adoptAccount, hasSynced, NameClashError, normalizePhone, rememberPassword } from './cloud/account';
+import { CLOUD_ENABLED } from './cloud/config';
+import { syncAccount } from './cloud/sync';
 import { db } from './db';
 import { hashPassword, randomBytes, toHex, uid, verifyPassword } from './crypto';
 import { DEFAULT_YEAR } from './labels';
@@ -14,8 +21,8 @@ import type { AppMeta, ClassRoom, Role, School, User } from './types';
 import { validatePassword, validateUsername } from './validation';
 
 const TOKEN_KEY = 'cce.session';
-const SESSION_HOURS = 12;
-const REMEMBER_DAYS = 30;
+/** Sessions end only with "बाहेर पडा" (no time limit). */
+const NO_EXPIRY = 8_640_000_000_000_000;
 const MAX_ATTEMPTS = 5;
 const LOCK_MS = 30_000;
 
@@ -58,10 +65,10 @@ function storageClear(key: string) {
   }
 }
 
-function storageSet(key: string, value: string, remember: boolean) {
+function storageSet(key: string, value: string) {
   try {
     storageClear(key);
-    (remember ? localStorage : sessionStorage).setItem(key, value);
+    localStorage.setItem(key, value);
   } catch {
     /* ignore (private mode) */
   }
@@ -131,6 +138,8 @@ export async function runSetup(input: SetupInput): Promise<void> {
 
 export interface RegisterInput extends TeacherSetup {
   confirm: string;
+  /** Mobile number: password / login-ID recovery by OTP. */
+  phone: string;
   /** Asked only while this device has no school name yet. */
   schoolName?: string;
 }
@@ -145,12 +154,25 @@ export class RegisterError extends Error {
   }
 }
 
+const CLOUD_FIELD: Record<string, keyof RegisterInput> = {
+  invalid_username: 'username',
+  username_taken: 'username',
+  invalid_password: 'password',
+  invalid_phone: 'phone',
+  phone_limit: 'phone',
+  invalid_name: 'displayName',
+  invalid_standard: 'standard',
+  invalid_section: 'section',
+};
+
 /**
- * A teacher creates their own account on this device: choose the standard
- * (इयत्ता 1–8) and section, then a username and password. The account sees only
- * its own class. Works on a brand-new device too (marks the app as set up).
+ * A teacher creates their own account: choose the standard (इयत्ता 1–8) and
+ * section, then a username, password and mobile number. The account sees only
+ * its own class. Online, the account is created on the server (usable on any
+ * device); without internet it is kept on this device and goes online at the
+ * next login with internet (`online: false`).
  */
-export async function registerTeacher(input: RegisterInput): Promise<User> {
+export async function registerTeacher(input: RegisterInput): Promise<{ user: User; online: boolean }> {
   const username = input.username.trim().toLowerCase();
   if (!(Number.isInteger(input.standard) && input.standard >= 1 && input.standard <= 8)) throw new RegisterError('standard', 'कृपया इयत्ता निवडा.');
   if (!input.section.trim()) throw new RegisterError('section', 'कृपया तुकडी निवडा.');
@@ -158,14 +180,32 @@ export async function registerTeacher(input: RegisterInput): Promise<User> {
   const uErr = validateUsername(username);
   if (uErr) throw new RegisterError('username', uErr);
   if (username === 'admin') throw new RegisterError('username', 'हे वापरकर्ता नाव आधीच वापरले आहे.');
+  const phone = normalizePhone(input.phone ?? '');
+  if (!phone) throw new RegisterError('phone', 'मोबाईल नंबर 10 अंकी असावा (उदा. 9876543210).');
   const pErr = validatePassword(input.password);
   if (pErr) throw new RegisterError('password', pErr);
   if (input.password !== input.confirm) throw new RegisterError('confirm', 'दोन्ही पासवर्ड सारखे नाहीत.');
+  if (await repo.getUserByUsername(username)) throw new RegisterError('username', 'हे वापरकर्ता नाव आधीच वापरले आहे. दुसरे नाव निवडा.');
 
-  const user = await newUser({ username, displayName: input.displayName, role: 'teacher', standard: input.standard, section: input.section.trim(), password: input.password });
+  let user: User | null = null;
+  if (CLOUD_ENABLED) {
+    try {
+      const s = await api.register({ username, password: input.password, displayName: input.displayName.trim(), phone, standard: input.standard, section: input.section.trim() });
+      user = await adoptAccount(s.account, s.token, input.password);
+      await syncAccount(user.id); // nothing to fetch yet; confirms the token
+    } catch (e) {
+      if (e instanceof CloudError) throw new RegisterError(CLOUD_FIELD[e.code] ?? '', cloudMessage(e));
+      if (!(e instanceof CloudUnavailable)) throw e;
+    }
+  }
+  const online = !!user;
+  if (!user) {
+    // no internet: a device account that goes online at the next login
+    user = { ...(await newUser({ username, displayName: input.displayName, role: 'teacher', standard: input.standard, section: input.section.trim(), password: input.password })), pendingPhone: phone };
+  }
   let year = DEFAULT_YEAR;
+  const u = user;
   await db.transaction('rw', db.users, db.meta, async () => {
-    if (await repo.getUserByUsername(username)) throw new RegisterError('username', 'हे वापरकर्ता नाव आधीच वापरले आहे. दुसरे नाव निवडा.');
     const meta = await repo.getMeta();
     if (!meta?.setupDone) {
       await repo.saveMeta({ setupDone: true, years: [DEFAULT_YEAR], currentYear: DEFAULT_YEAR, createdAt: Date.now() });
@@ -177,10 +217,12 @@ export async function registerTeacher(input: RegisterInput): Promise<User> {
       const school = await repo.getSchool();
       if (!school.name.trim()) await repo.saveSchool({ ...school, name: schoolName });
     }
-    await db.users.add(user);
+    if (!online) await db.users.add(u);
   });
-  await repo.getOrCreateClass(user, year);
-  return user;
+  await repo.getOrCreateClass(u, year);
+  // lets a device-only account go online later in this session without asking again
+  rememberPassword(u.id, input.password);
+  return { user: u, online };
 }
 
 /* ------------------------------------------------------------------ */
@@ -212,29 +254,82 @@ export class LoginError extends Error {
   }
 }
 
-export async function login(usernameRaw: string, password: string, year: string, remember: boolean): Promise<AuthState> {
-  const username = usernameRaw.trim().toLowerCase();
-  const wait = lockRemainingMs(username);
-  if (wait > 0) throw new LoginError(`अनेक चुकीचे प्रयत्न झाले. कृपया ${Math.ceil(wait / 1000)} सेकंदांनी पुन्हा प्रयत्न करा.`);
-  const user = await repo.getUserByUsername(username);
-  const ok = user ? await verifyPassword(password, user) : false;
-  if (!user || !ok) {
-    recordFailure(username);
-    throw new LoginError('वापरकर्ता नाव किंवा पासवर्ड चुकीचा आहे.');
-  }
-  if (!user.active) throw new LoginError('हे खाते बंद केले आहे. कृपया मुख्याध्यापकांशी संपर्क साधा.');
-  attempts.delete(username);
-
+/** Start a session for an account that has been verified. */
+export async function openSession(user: User, year: string): Promise<AuthState> {
   const meta = await repo.getMeta();
   const useYear = meta?.years.includes(year) ? year : (meta?.currentYear ?? DEFAULT_YEAR);
   const classRoom = user.role === 'teacher' ? await repo.getOrCreateClass(user, useYear) : null;
-
   const token = toHex(randomBytes(32));
-  const ttl = remember ? REMEMBER_DAYS * 86400_000 : SESSION_HOURS * 3600_000;
-  await db.sessions.put({ token, userId: user.id, year: useYear, createdAt: Date.now(), expiresAt: Date.now() + ttl });
-  await db.users.put({ ...user, lastLoginAt: Date.now() });
-  storageSet(TOKEN_KEY, token, remember);
+  await db.sessions.put({ token, userId: user.id, year: useYear, createdAt: Date.now(), expiresAt: NO_EXPIRY });
+  await db.users.update(user.id, { lastLoginAt: Date.now() });
+  storageSet(TOKEN_KEY, token);
   return { user, year: useYear, classRoom, token };
+}
+
+/**
+ * Teachers: the online account first (works on any device, brings the class
+ * data to this device); without internet, the copy kept on this device.
+ * The headmaster (admin) account is local to its device.
+ */
+export async function login(usernameRaw: string, password: string, year: string): Promise<AuthState> {
+  const username = usernameRaw.trim().toLowerCase();
+  const wait = lockRemainingMs(username);
+  if (wait > 0) throw new LoginError(`अनेक चुकीचे प्रयत्न झाले. कृपया ${Math.ceil(wait / 1000)} सेकंदांनी पुन्हा प्रयत्न करा.`);
+  const local = await repo.getUserByUsername(username);
+  const localOk = local ? await verifyPassword(password, local) : false;
+
+  if (CLOUD_ENABLED && local?.role !== 'admin') {
+    try {
+      const s = await api.login(username, password);
+      // a device-only account with this login joins the online account only if its password matches too
+      if (local && !local.cloud && local.id !== s.account.id && !localOk) throw new NameClashError();
+      const user = await adoptAccount(s.account, s.token, password, local && localOk ? local : undefined);
+      const fresh = !(await hasSynced(user.id));
+      const r = await syncAccount(user.id);
+      if (!r.ok && fresh && !(await db.classes.where('teacherId').equals(user.id).count())) {
+        throw new LoginError('तुमची माहिती आणता आली नाही. इंटरनेट तपासून पुन्हा लॉगिन करा.');
+      }
+      attempts.delete(username);
+      rememberPassword(user.id, password);
+      return openSession((await repo.getUser(user.id)) ?? user, year);
+    } catch (e) {
+      if (e instanceof LoginError) throw e;
+      if (e instanceof NameClashError) throw new LoginError(e.message);
+      if (e instanceof CloudError) {
+        if (e.code === 'bad_credentials') {
+          // not (yet) an online account: a device-only account opens with its own password
+          if (local && !local.cloud && localOk) return localLogin(local, password, year);
+          recordFailure(username);
+          throw new LoginError(
+            local?.cloud && localOk ? 'हा पासवर्ड बदलला आहे. नवीन पासवर्ड वापरा (विसरल्यास “पासवर्ड विसरलात?”).' : 'वापरकर्ता नाव किंवा पासवर्ड चुकीचा आहे.',
+          );
+        }
+        throw new LoginError(cloudMessage(e));
+      }
+      if (!(e instanceof CloudUnavailable)) throw e;
+      // no internet / service unreachable: continue with this device's copy
+      if (!local) {
+        recordFailure(username);
+        throw new LoginError(
+          typeof navigator !== 'undefined' && navigator.onLine === false
+            ? 'इंटरनेट नाही. हे खाते या उपकरणावर पहिल्यांदा उघडण्यासाठी इंटरनेट सुरू करा.'
+            : 'ऑनलाइन सेवेशी संपर्क होऊ शकला नाही. थोड्या वेळाने पुन्हा प्रयत्न करा.',
+        );
+      }
+    }
+  }
+  if (!local || !localOk) {
+    recordFailure(username);
+    throw new LoginError('वापरकर्ता नाव किंवा पासवर्ड चुकीचा आहे.');
+  }
+  return localLogin(local, password, year);
+}
+
+async function localLogin(user: User, password: string, year: string): Promise<AuthState> {
+  if (!user.active) throw new LoginError('हे खाते बंद केले आहे. कृपया मुख्याध्यापकांशी संपर्क साधा.');
+  attempts.delete(user.username);
+  if (user.role === 'teacher') rememberPassword(user.id, password);
+  return openSession(user, year);
 }
 
 /** Restore a session after refresh (works offline). */
@@ -269,6 +364,17 @@ export async function changeOwnPassword(userId: string, current: string, next: s
   if (!(await verifyPassword(current, user))) throw new Error('सध्याचा पासवर्ड चुकीचा आहे.');
   const err = validatePassword(next, confirm);
   if (err) throw new Error(err);
+  if (user.cloud) {
+    // the online account has one password for every device
+    const st = await db.syncState.get(user.id);
+    if (!st?.token) throw new Error('पासवर्ड बदलण्यासाठी आधी इंटरनेटसह पुन्हा लॉगिन करा.');
+    try {
+      await api.changePassword(st.token, current, next);
+    } catch (e) {
+      throw new Error(e instanceof CloudUnavailable ? 'पासवर्ड बदलण्यासाठी इंटरनेट आवश्यक आहे.' : cloudMessage(e), { cause: e });
+    }
+    rememberPassword(user.id, next);
+  }
   const pw = await hashPassword(next);
   await db.users.put({ ...user, ...pw, mustChangePassword: false, updatedAt: Date.now() });
 }
@@ -281,6 +387,7 @@ export async function adminResetPassword(adminId: string, userId: string, next: 
   if (err) throw new Error(err);
   const user = await repo.getUser(userId);
   if (!user) throw new Error('खाते सापडले नाही.');
+  if (user.cloud) throw new Error('हे ऑनलाइन खाते आहे — शिक्षकांनी लॉगिन पानावरील “पासवर्ड विसरलात?” वापरून मोबाईल OTP ने नवीन पासवर्ड ठेवावा.');
   const pw = await hashPassword(next);
   await db.users.put({ ...user, ...pw, mustChangePassword: user.id !== adminId, updatedAt: Date.now() });
   // end that user's sessions

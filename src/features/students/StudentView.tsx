@@ -23,24 +23,30 @@ export default function StudentView() {
   const r = b.results.get(s.id);
   const att = attendanceTotals(b, s.id, yearMonths(cls.year));
 
+  const h = s.health;
+  const measure = (w?: string, ht?: string) => [w ? `${w} कि.ग्रॅ.` : '', ht ? `${ht} से.मी.` : ''].filter(Boolean).join(', ');
+  const birth = [s.birthPlace, s.birthTaluka && `ता. ${s.birthTaluka}`, s.birthDistrict && `जि. ${s.birthDistrict}`, s.birthState, s.birthCountry].filter(Boolean).join(', ');
   const rows: [string, string][] = [
     ['हजेरी क्रमांक', s.rollNo ? String(s.rollNo) : '—'],
     ['लिंग', GENDER_LABEL[s.gender]],
     ['जन्मतारीख', fmtDate(s.dob) || '—'],
-    ['जन्मस्थळ', s.birthPlace || '—'],
-    ['रजिस्टर क्रमांक', s.regNo || '—'],
-    ['विद्यार्थी आयडी (सरल)', s.saralId || '—'],
-    ['UDISE PEN', s.pen || '—'],
-    ['आईचे नाव', s.motherName || '—'],
-    ['वडिलांचे नाव', s.fatherName || '—'],
+    ['जन्मस्थळ', birth || '—'],
+    ['जनरल रजिस्टर क्रमांक', s.regNo || '—'],
+    ['पेन नंबर (PEN)', s.pen || '—'],
+    ['आधार क्रमांक', s.aadhaar ? s.aadhaar.replace(/(\d{4})(?=\d)/g, '$1 ') : '—'],
+    ['अपार आयडी', s.apaar || '—'],
+    ['आईचे नाव', [s.motherName, s.motherOccupation && `(${s.motherOccupation})`].filter(Boolean).join(' ') || '—'],
+    ['वडिलांचे नाव', [s.fatherName, s.fatherOccupation && `(${s.fatherOccupation})`].filter(Boolean).join(' ') || '—'],
     ['पालकाचे नाव', s.guardianName || '—'],
     ['मोबाईल', s.mobile || '—'],
     ['पत्ता', s.address || '—'],
     ['धर्म', s.religion || '—'],
-    ['जात', s.caste || '—'],
+    ['जात', [s.caste, s.subCaste && `(पोटजात: ${s.subCaste})`].filter(Boolean).join(' ') || '—'],
     ['प्रवर्ग', s.category ? categoryLabel(s.category) : '—'],
+    ['आरोग्य — प्रथम सत्र', measure(h?.weight1, h?.height1) || '—'],
+    ['आरोग्य — द्वितीय सत्र', measure(h?.weight2, h?.height2) || '—'],
     ['प्रवेश दिनांक', fmtDate(s.admissionDate) || '—'],
-    ['मागील शाळा', s.previousSchool || '—'],
+    ['या पूर्वीची शाळा', s.previousSchool || '—'],
   ];
 
   return (

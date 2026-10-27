@@ -4,41 +4,76 @@ import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useClassBundle } from '../../app/data';
 import { useTeacher } from '../../app/session';
 import { fmtDate, safeFileName, todayIso } from '../../lib/format';
-import { categoryLabel, CONDUCT_OPTIONS, LEAVING_REASONS, MONTH_NAMES, PROGRESS_OPTIONS, standardLabel } from '../../lib/labels';
+import { categoryLabel, CONDUCT_OPTIONS, LEAVING_REASONS, MONTH_NAMES, PROGRESS_OPTIONS, standardLabel, standardNum } from '../../lib/labels';
 import { dateToMarathiWords } from '../../lib/marathi';
 import * as repo from '../../lib/repo';
 import { track } from '../../lib/saveStatus';
-import type { Certificate, ClassRoom, Student } from '../../lib/types';
+import type { Certificate, ClassRoom, School, Student } from '../../lib/types';
 import { useFeedback } from '../../components/feedback';
 import { ReportViewer } from '../../components/report/ReportViewer';
 import { Button, Checkbox, Notice, PageHeader, Panel, SelectField, TextField } from '../../components/ui';
-import { LeavingCertificatePage } from '../reports/templates/certificate';
+import { LeavingCertificatePage, splitName, ZP_FIELDS } from '../reports/templates/certificate';
 
 const DATE_FIELDS = new Set(['dob', 'admissionDate', 'leftDate', 'lastAttended']);
 const SELECTS: Record<string, string[]> = { reason: LEAVING_REASONS, conduct: CONDUCT_OPTIONS, progress: PROGRESS_OPTIONS };
+const WIDE = new Set(['remark', 'fullName', 'lastStd', 'previousSchool', 'dobWords', 'reason']);
 
-function prefill(st: Student, cls: ClassRoom): Record<string, string> {
+/** Birth place parts; older records kept "गाव, ता. …, जि. …" in one field. */
+function birthParts(st: Student): { place: string; taluka: string; district: string } {
+  let place = st.birthPlace ?? '';
+  let taluka = st.birthTaluka ?? '';
+  let district = st.birthDistrict ?? '';
+  if (!taluka && !district && place.includes(',')) {
+    const p = place.split(',').map((x) => x.trim()).filter(Boolean);
+    place = p[0] ?? '';
+    taluka = (p[1] ?? '').replace(/^(ता\.?|तालुका)\s*/, '');
+    district = (p[2] ?? '').replace(/^(जि\.?|जिल्हा)\s*/, '');
+  }
+  return { place, taluka, district };
+}
+
+/** "इयत्ता सातवी (7 वी) — जून 2026 पासून" (admission month when admitted during this year). */
+function sinceText(st: Student, cls: ClassRoom): string {
   const start = Number(cls.year.slice(0, 4));
+  const m = /^(\d{4})-(\d{2})/.exec(st.admissionDate || '');
+  const inYear = m && st.admissionDate >= `${start}-06-01` && st.admissionDate <= `${start + 1}-05-31`;
+  const since = inYear && m ? `${MONTH_NAMES[Number(m[2]) - 1]} ${m[1]}` : `${MONTH_NAMES[5]} ${start}`;
+  return `इयत्ता ${standardLabel(cls.standard)} (${standardNum(cls.standard)}) — ${since} पासून`;
+}
+
+function prefill(st: Student, cls: ClassRoom, school: School): Record<string, string> {
+  const name = splitName(st.fullName);
+  const birth = birthParts(st);
   return {
     regNo: st.regNo,
-    saralId: st.saralId,
     pen: st.pen,
+    aadhaar: st.aadhaar ?? '',
+    apaar: st.apaar ?? '',
+    email: school.email ?? '',
     fullName: st.fullName,
+    firstName: name.first,
+    fatherFirst: name.father || (st.fatherName || st.guardianName || '').trim().split(/\s+/)[0] || '',
+    surname: name.surname,
     motherName: st.motherName,
     fatherName: st.fatherName || st.guardianName,
     nationality: st.nationality || 'भारतीय',
     motherTongue: st.motherTongue || 'मराठी',
     religion: st.religion,
     caste: st.caste,
+    subCaste: st.subCaste ?? '',
     category: st.category ? categoryLabel(st.category) : '',
-    birthPlace: st.birthPlace,
+    birthPlace: birth.place,
+    birthTaluka: birth.taluka,
+    birthDistrict: birth.district,
+    birthState: st.birthState || 'महाराष्ट्र',
+    birthCountry: st.birthCountry || 'भारत',
     dob: st.dob,
     dobWords: dateToMarathiWords(st.dob),
     previousSchool: st.previousSchool,
     admissionDate: st.admissionDate,
     admissionStd: st.admissionStd,
     currentStd: standardLabel(cls.standard),
-    lastStd: `इयत्ता ${standardLabel(cls.standard)} — ${MONTH_NAMES[5]} ${start} पासून`,
+    lastStd: sinceText(st, cls),
     progress: st.leaving?.progress || 'चांगली',
     conduct: st.leaving?.conduct || 'चांगली',
     lastAttended: st.leaving?.lastAttended || '',
@@ -76,12 +111,13 @@ export default function CertificateEdit() {
     const sid = sp.get('student');
     const st = sid ? b.allStudents.find((s) => s.id === sid) : undefined;
     void repo.peekNextCertNo().then((no) =>
-      setCert({ id: '', classId: scope.classId, studentId: st?.id ?? '', certNo: no, issueDate: todayIso(), data: st ? prefill(st, cls) : {}, createdAt: 0, updatedAt: 0 }),
+      setCert({ id: '', classId: scope.classId, studentId: st?.id ?? '', certNo: no, issueDate: todayIso(), data: st ? prefill(st, cls, school) : {}, createdAt: 0, updatedAt: 0 }),
     );
-  }, [id, cert, b, sp, scope.classId, cls]);
+  }, [id, cert, b, sp, scope.classId, cls, school]);
 
   if (!b || !tpl || !cert) return null;
-  const fields = tpl.fields.filter((f) => f.enabled);
+  const zp = tpl.layout !== 'list';
+  const fields = zp ? ZP_FIELDS : tpl.fields.filter((f) => f.enabled);
   const setData = (k: string, v: string) =>
     setCert((c) => {
       if (!c) return c;
@@ -102,7 +138,10 @@ export default function CertificateEdit() {
     }
     setBusy(true);
     try {
-      const saved = await track(repo.saveCertificate(scope, { ...cert, data: { ...cert.data, certNo: cert.certNo, issueDate: cert.issueDate } }));
+      const data: Record<string, string> = { ...cert.data, certNo: cert.certNo, issueDate: cert.issueDate };
+      // the ZP form edits the name in three parts; keep the full name in step
+      if (zp && (data.firstName || data.surname)) data.fullName = [data.firstName, data.fatherFirst, data.surname].map((x) => (x ?? '').trim()).filter(Boolean).join(' ');
+      const saved = await track(repo.saveCertificate(scope, { ...cert, data }));
       if (markLeft) {
         const st = await repo.getStudent(scope, cert.studentId);
         await track(
@@ -146,7 +185,7 @@ export default function CertificateEdit() {
             required
             onChange={(v) => {
               const st = b.allStudents.find((s) => s.id === v);
-              setCert({ ...cert, studentId: v, data: st ? prefill(st, cls) : {} });
+              setCert({ ...cert, studentId: v, data: st ? prefill(st, cls, school) : {} });
             }}
             options={b.allStudents.map((s) => ({ value: s.id, label: `${s.rollNo ? `${s.rollNo}. ` : ''}${s.fullName}${s.status === 'left' ? ' (शाळा सोडली)' : ''}` }))}
           />
@@ -161,7 +200,7 @@ export default function CertificateEdit() {
               SELECTS[f.key] ? (
                 <SelectField key={f.key} label={f.label} value={cert.data[f.key] ?? ''} onChange={(v) => setData(f.key, v)} placeholder="निवडा" options={[...new Set([...(cert.data[f.key] ? [cert.data[f.key]] : []), ...SELECTS[f.key]])].map((o) => ({ value: o, label: o }))} />
               ) : (
-                <TextField key={f.key} label={f.label} type={DATE_FIELDS.has(f.key) ? 'date' : 'text'} value={cert.data[f.key] ?? ''} onChange={(v) => setData(f.key, v)} className={f.key === 'remark' || f.key === 'fullName' ? 'sm:col-span-2' : ''} />
+                <TextField key={f.key} label={f.label} type={DATE_FIELDS.has(f.key) ? 'date' : 'text'} value={cert.data[f.key] ?? ''} onChange={(v) => setData(f.key, v)} className={WIDE.has(f.key) ? 'sm:col-span-2' : ''} />
               ),
             )}
           </div>

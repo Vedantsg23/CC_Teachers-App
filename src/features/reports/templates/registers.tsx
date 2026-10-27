@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { assessmentId, pickPeriod, sumTools } from '../../../lib/calc';
 import { fmtDate, fmtNum, fmtPct, monthLabel } from '../../../lib/format';
 import { categoryShort, GENDER_LABEL, standardLabel } from '../../../lib/labels';
+import { schoolLogoSrc } from '../../../lib/logo';
 import type { Period, Subject, Term } from '../../../lib/types';
 import { CceHeader, PagedTable, ReportPage, Signatures, VT } from '../../../components/report/Report';
 import {
@@ -30,9 +31,10 @@ const n = (v: number | null | undefined) => (v === null || v === undefined ? '' 
 /* ------------------------------------------------------------------ */
 export function CoverReport({ ctx }: { ctx: ReportCtx }) {
   const { school, cls } = ctx;
+  const logo = schoolLogoSrc(school);
   return (
     <ReportPage className="cover">
-      <Emblem />
+      {logo ? <img className="cover-logo" src={logo} alt="" /> : <Emblem />}
       <div className="cover-org">{school.orgLine}</div>
       <div className="cover-year">सन : {cls.year}</div>
       <div className="cover-title">
@@ -134,7 +136,7 @@ export function StudentListReport({ ctx }: { ctx: ReportCtx }) {
           <th>लिंग</th>
           <th>जन्मतारीख</th>
           <th>रजि. क्र.</th>
-          <th>सरल आयडी</th>
+          <th>आधार क्र.</th>
           <th>आईचे नाव</th>
           <th>पालकाचे नाव</th>
           <th>जात</th>
@@ -150,7 +152,7 @@ export function StudentListReport({ ctx }: { ctx: ReportCtx }) {
           <td>{GENDER_LABEL[s.gender]}</td>
           <td>{fmtDate(s.dob)}</td>
           <td>{s.regNo}</td>
-          <td>{s.saralId}</td>
+          <td style={{ whiteSpace: 'nowrap' }}>{s.aadhaar ?? ''}</td>
           <td className="l">{s.motherName}</td>
           <td className="l">{s.guardianName || s.fatherName}</td>
           <td>{s.caste}</td>
@@ -303,11 +305,14 @@ export function ClassRegisterReport({ ctx, opts }: { ctx: ReportCtx; opts: Repor
   const term = opts.term;
   const months = termMonths(cls.year, term);
   const header = <CceHeader lines={[[udiseCell(ctx), termText(term), yearCell(ctx)], [schoolCell(ctx), classCell(ctx)]]} />;
+  // सर्व विषयांचे एकूण: the same maximum for every student (subjects counted in the total)
+  const anyResult = b.students.map((st) => b.results.get(st.id)).find(Boolean);
+  const totalMax = anyResult ? pickPeriod(anyResult, term).max : 0;
   return (
     <PagedTable
       orientation="landscape"
       header={header}
-      emptyColSpan={4 + cfg.subjects.length * 2}
+      emptyColSpan={6 + cfg.subjects.length * 2}
       thead={
         <>
           <tr>
@@ -324,6 +329,9 @@ export function ClassRegisterReport({ ctx, opts }: { ctx: ReportCtx; opts: Repor
                 {s.short}
               </th>
             ))}
+            <th colSpan={2} className="cr-total">
+              सर्व विषय
+            </th>
           </tr>
           <tr>
             {cfg.subjects.map((s) => [
@@ -334,6 +342,8 @@ export function ClassRegisterReport({ ctx, opts }: { ctx: ReportCtx; opts: Repor
                 श्रेणी
               </th>,
             ])}
+            <th className="sm cr-total">एकूण{totalMax ? ` /${totalMax}` : ''}</th>
+            <th className="sm cr-total">श्रेणी</th>
           </tr>
         </>
       }
@@ -356,6 +366,8 @@ export function ClassRegisterReport({ ctx, opts }: { ctx: ReportCtx; opts: Repor
                 </td>,
               ];
             })}
+            <td className="b cr-total">{dash(tr?.entered ? n(tr.total) : '')}</td>
+            <td className="b cr-total">{dash(tr?.entered ? tr.grade : '')}</td>
           </tr>
         );
       })}

@@ -11,7 +11,11 @@ import { useFeedback } from '../feedback';
 import { Button } from '../ui';
 import type { Orientation } from './Report';
 
+export type Paper = 'A4' | 'A3';
+
 const PAGE_W_PX = { portrait: (210 / 25.4) * 96, landscape: (297 / 25.4) * 96 };
+/** A3 is A4 enlarged by √2 — every report keeps its A4 layout and prints bigger. */
+const PAPER_SCALE: Record<Paper, number> = { A4: 1, A3: Math.SQRT2 };
 
 function printRoot(): HTMLElement {
   let el = document.getElementById('print-root');
@@ -32,10 +36,12 @@ export function ReportViewer({
   onClose,
   showPageNumbers = true,
   author,
+  paper = 'A4',
 }: {
   title: string;
   fileName: string;
   orientation: Orientation;
+  paper?: Paper;
   options?: ReactNode;
   children: ReactNode;
   onClose: () => void;
@@ -63,13 +69,13 @@ export function ReportViewer({
     if (!el) return;
     const update = () => {
       const w = el.clientWidth - 16;
-      setScale(zoom === 'full' ? 1 : Math.min(1, Math.max(0.2, w / PAGE_W_PX[orientation])));
+      setScale(zoom === 'full' ? 1 : Math.min(1, Math.max(0.15, w / (PAGE_W_PX[orientation] * PAPER_SCALE[paper]))));
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [zoom, orientation]);
+  }, [zoom, orientation, paper]);
 
   // number the pages ("पृष्ठ 1 / 3") whenever the page set changes
   useEffect(() => {
@@ -100,7 +106,7 @@ export function ReportViewer({
     setBusy(mode);
     setProgress('');
     try {
-      const bytes = await pagesToPdf(pages, { title, author, onProgress: (d, t) => setProgress(`${d}/${t}`) });
+      const bytes = await pagesToPdf(pages, { title, author, pageScale: PAPER_SCALE[paper], onProgress: (d, t) => setProgress(`${d}/${t}`) });
       const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
       if (mode === 'share') {
         const r = await shareFile(blob, fileName, title);
@@ -120,7 +126,7 @@ export function ReportViewer({
 
   function doPrint() {
     const style = document.createElement('style');
-    style.textContent = `@page { size: A4 ${orientation}; margin: 0; }`;
+    style.textContent = `@page { size: ${paper} ${orientation}; margin: 0; }`;
     document.head.appendChild(style);
     const cleanup = () => {
       style.remove();
@@ -168,7 +174,7 @@ export function ReportViewer({
         </div>
       </div>
       <div ref={scrollRef} className="report-scroll flex-1 overflow-auto">
-        <div ref={stageRef} className="report-stage" style={{ ['--s' as string]: scale }}>
+        <div ref={stageRef} className={`report-stage${paper === 'A3' ? ' paper-a3' : ''}`} style={{ ['--s' as string]: scale }}>
           {children}
         </div>
       </div>

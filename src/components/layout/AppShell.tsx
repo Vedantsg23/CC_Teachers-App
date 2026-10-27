@@ -5,6 +5,7 @@ import { useSession } from '../../app/session';
 import { APP_NAME, standardOrdinal } from '../../lib/labels';
 import { useSaveStatus } from '../../lib/saveStatus';
 import { Icon, type IconName } from '../Icon';
+import { CloudBadge, LinkBanner } from '../CloudStatus';
 import { useFeedback } from '../feedback';
 import { ChangePasswordModal } from '../../features/auth/ChangePassword';
 
@@ -235,7 +236,7 @@ export function AppShell() {
           </button>
           <div className="min-w-0 flex-1 truncate font-display text-[19px]">{title}</div>
           <SaveIndicator />
-          <NetworkBadge light />
+          {user?.cloud ? <CloudBadge /> : <NetworkBadge light />}
         </div>
         {pwa.needRefresh ? (
           <div className="flex flex-wrap items-center gap-2 bg-[#fff4df] px-4 py-2 text-[14px] text-[#6b3e05]">
@@ -251,6 +252,7 @@ export function AppShell() {
       </header>
 
       <main id="main" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-[1240px] px-3 pt-4 pb-24 outline-none sm:px-5 md:pt-6">
+        <LinkBanner />
         <Outlet />
       </main>
       {user?.mustChangePassword ? <ChangePasswordModal forced /> : null}

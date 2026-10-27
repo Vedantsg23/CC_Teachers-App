@@ -12,8 +12,8 @@ import { Icon } from '../../components/Icon';
 import { useFeedback } from '../../components/feedback';
 import { Button, Checkbox, EmptyState, InlineSelect, LinkButton, PageHeader } from '../../components/ui';
 
-export function Avatar({ s, size = 56 }: { s: Pick<Student, 'photo' | 'fullName' | 'gender'>; size?: number }) {
-  if (s.photo) return <img src={s.photo} alt="" className="shrink-0 rounded-lg object-cover ring-1 ring-rule" style={{ width: size, height: size }} />;
+/** Initials badge (student photos are no longer used). */
+export function Avatar({ s, size = 56 }: { s: Pick<Student, 'fullName' | 'gender'>; size?: number }) {
   const initials = s.fullName.trim().split(/\s+/).map((w) => [...w][0] ?? '').slice(0, 2).join('');
   return (
     <span
@@ -54,7 +54,13 @@ export default function StudentsPage() {
         if (g !== grade) return false;
       }
       if (!needle) return true;
-      return s.fullName.toLowerCase().includes(needle) || String(s.rollNo ?? '') === needle || s.regNo.toLowerCase() === needle || s.saralId === needle;
+      const digits = needle.replace(/\s/g, '');
+      return (
+        s.fullName.toLowerCase().includes(needle) ||
+        String(s.rollNo ?? '') === needle ||
+        s.regNo.toLowerCase() === needle ||
+        (digits.length >= 4 && [s.aadhaar, s.apaar, s.pen].some((x) => x && x === digits))
+      );
     });
   }, [b, q, gender, cat, caste, grade, showLeft]);
 

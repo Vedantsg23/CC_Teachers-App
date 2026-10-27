@@ -219,12 +219,15 @@ export function defaultConfig(standard: number): ClassConfig {
 
 export function defaultLcTemplate(): LcTemplate {
   return {
+    layout: 'zp',
+    zpCertText: 'दाखला देण्यात येतो की, वरील माहिती शाळेतील जनरल रजिस्टर नं. १ प्रमाणे आहे.',
     title: 'शाळा सोडल्याचा दाखला',
     headerNote: '(या दाखल्यात कोणताही बदल करू नये.)',
     fields: [
       { key: 'regNo', label: 'प्रवेश क्रमांक (जनरल रजिस्टर क्र.)', enabled: true },
-      { key: 'saralId', label: 'विद्यार्थी आयडी (सरल)', enabled: true },
-      { key: 'pen', label: 'UDISE PEN क्रमांक', enabled: true },
+      { key: 'pen', label: 'पेन नंबर (UDISE PEN)', enabled: true },
+      { key: 'aadhaar', label: 'आधार क्रमांक', enabled: true },
+      { key: 'apaar', label: 'अपार आयडी', enabled: true },
       { key: 'fullName', label: 'विद्यार्थ्याचे संपूर्ण नाव', enabled: true },
       { key: 'motherName', label: 'आईचे नाव', enabled: true },
       { key: 'fatherName', label: 'वडिलांचे / पालकांचे नाव', enabled: true },
@@ -232,6 +235,7 @@ export function defaultLcTemplate(): LcTemplate {
       { key: 'motherTongue', label: 'मातृभाषा', enabled: true },
       { key: 'religion', label: 'धर्म', enabled: true },
       { key: 'caste', label: 'जात', enabled: true },
+      { key: 'subCaste', label: 'पोटजात', enabled: true },
       { key: 'category', label: 'जात प्रवर्ग', enabled: true },
       { key: 'birthPlace', label: 'जन्मस्थळ (गाव / तालुका / जिल्हा)', enabled: true },
       { key: 'dob', label: 'जन्मदिनांक (अंकी)', enabled: true },

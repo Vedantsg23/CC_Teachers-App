@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { isIOS, promptInstall, usePwa } from '../../app/pwa';
 import { useSession } from '../../app/session';
-import { login, LoginError, registerTeacher, RegisterError, type RegisterInput } from '../../lib/auth';
+import { login, LoginError, openSession, registerTeacher, RegisterError, type AuthState, type RegisterInput } from '../../lib/auth';
 import { APP_NAME, APP_TITLE, SECTIONS, STANDARD_WORDS } from '../../lib/labels';
 import { Icon } from '../../components/Icon';
 import { NetworkBadge } from '../../components/layout/AppShell';
-import { Button, Checkbox, Modal, Notice, SelectField, TextField } from '../../components/ui';
+import { useFeedback } from '../../components/feedback';
+import { Button, Modal, Notice, SelectField, TextField } from '../../components/ui';
+import { RecoverForm } from './Recover';
 import { SetupWizard } from './SetupWizard';
 
 export function InstallHint({ compact }: { compact?: boolean }) {
@@ -89,10 +91,9 @@ function StandardPicker({ value, onChange, error }: { value: number; onChange: (
   );
 }
 
-function RegisterForm({ onDone, onLogin, showLoginLink }: { onDone: (username: string, password: string, remember: boolean) => Promise<void>; onLogin: () => void; showLoginLink: boolean }) {
-  const { school } = useSession();
-  const [f, setF] = useState<RegisterInput>({ standard: 0, section: 'अ', displayName: '', username: '', password: '', confirm: '', schoolName: '' });
-  const [remember, setRemember] = useState(false);
+function RegisterForm({ onDone, onLogin, showLoginLink }: { onDone: (a: AuthState, online: boolean) => void; onLogin: () => void; showLoginLink: boolean }) {
+  const { school, meta } = useSession();
+  const [f, setF] = useState<RegisterInput>({ standard: 0, section: 'अ', displayName: '', username: '', password: '', confirm: '', phone: '', schoolName: '' });
   const [errors, setErrors] = useState<Partial<Record<keyof RegisterInput, string>>>({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -109,8 +110,8 @@ function RegisterForm({ onDone, onLogin, showLoginLink }: { onDone: (username: s
         setErrors({});
         setBusy(true);
         try {
-          await registerTeacher(f);
-          await onDone(f.username, f.password, remember);
+          const r = await registerTeacher(f);
+          onDone(await openSession(r.user, meta.currentYear), r.online);
         } catch (x) {
           if (x instanceof RegisterError && x.field) setErrors({ [x.field]: x.message });
           else setErr(x instanceof Error ? x.message : 'खाते तयार करताना अडचण आली.');
@@ -137,12 +138,23 @@ function RegisterForm({ onDone, onLogin, showLoginLink }: { onDone: (username: s
       />
       <TextField label="पासवर्ड" type="password" value={f.password} onChange={(v) => set({ password: v })} required error={errors.password} hint="किमान 6 अक्षरे" autoComplete="new-password" />
       <TextField label="पासवर्ड पुन्हा" type="password" value={f.confirm} onChange={(v) => set({ confirm: v })} required error={errors.confirm} autoComplete="new-password" />
-      <Checkbox label="या उपकरणावर लॉगिन ठेवा (30 दिवस)" hint="इतर शिक्षकही हेच उपकरण वापरत असल्यास हे निवडू नका." checked={remember} onChange={setRemember} />
+      <TextField
+        label="मोबाईल नंबर"
+        type="tel"
+        inputMode="tel"
+        value={f.phone}
+        onChange={(v) => set({ phone: v })}
+        required
+        error={errors.phone}
+        autoComplete="tel"
+        placeholder="9876543210"
+        hint="पासवर्ड किंवा वापरकर्ता नाव विसरल्यास या नंबरवर OTP येईल."
+      />
       {err ? <Notice kind="error">{err}</Notice> : null}
       <Button type="submit" variant="primary" loading={busy} className="w-full text-[17px]" icon="check">
         खाते तयार करा
       </Button>
-      <p className="text-[13.5px] text-muted">पासवर्ड लक्षात ठेवा — माहिती फक्त याच उपकरणावर जतन होते. नियमितपणे “डेटा बॅकअप” घ्या.</p>
+      <p className="text-[13.5px] text-muted">हेच वापरकर्ता नाव व पासवर्ड वापरून कोणत्याही मोबाईल, टॅबलेट किंवा संगणकावर लॉगिन करता येईल; भरलेली माहिती ऑनलाइन जतन होते.</p>
       {showLoginLink ? (
         <Button variant="secondary" className="w-full" onClick={onLogin}>
           आधीच खाते आहे? लॉगिन करा
@@ -154,13 +166,15 @@ function RegisterForm({ onDone, onLogin, showLoginLink }: { onDone: (username: s
 
 export function LoginPage({ firstRun = false }: { firstRun?: boolean }) {
   const { meta, school, signedIn } = useSession();
-  const [mode, setMode] = useState<'login' | 'register' | 'school'>(firstRun ? 'register' : 'login');
+  const { toast } = useFeedback();
+  // the same account opens on any device, so a new device starts at लॉगिन too
+  const [mode, setMode] = useState<'login' | 'register' | 'school' | 'recover'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [year, setYear] = useState(meta.currentYear);
-  const [remember, setRemember] = useState(false);
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
 
   if (mode === 'school') return <SetupWizard onCancel={() => setMode('register')} />;
@@ -198,10 +212,10 @@ export function LoginPage({ firstRun = false }: { firstRun?: boolean }) {
               <h2 className="margin-rule pl-3.5 font-display text-[28px] text-ink-deep">नवीन शिक्षक खाते</h2>
               <p className="mt-1 pl-3.5 text-[15px] text-muted">इयत्ता निवडा, वापरकर्ता नाव व पासवर्ड ठेवा — हे खाते फक्त तुमच्याच वर्गाची माहिती पाहू शकेल.</p>
               <RegisterForm
-                showLoginLink={!firstRun}
+                showLoginLink
                 onLogin={() => setMode('login')}
-                onDone={async (u, p, rem) => {
-                  const st = await login(u, p, meta.currentYear, rem);
+                onDone={(st, online) => {
+                  if (!online) toast('इंटरनेट नसल्याने खाते सध्या या उपकरणावर तयार झाले. इंटरनेटसह पुढील लॉगिनला ते ऑनलाइन होईल.', 'info');
                   signedIn(st);
                 }}
               />
@@ -214,10 +228,24 @@ export function LoginPage({ firstRun = false }: { firstRun?: boolean }) {
                 </p>
               ) : null}
             </>
+          ) : mode === 'recover' ? (
+            <>
+              <h2 className="margin-rule pl-3.5 font-display text-[28px] text-ink-deep">पासवर्ड / वापरकर्ता नाव विसरलात?</h2>
+              <RecoverForm
+                onCancel={() => setMode('login')}
+                onDone={(u) => {
+                  setUsername(u);
+                  setPassword('');
+                  setErr('');
+                  setInfo(`नवीन पासवर्ड ठेवला. “${u}” या वापरकर्ता नावाने आता लॉगिन करा.`);
+                  setMode('login');
+                }}
+              />
+            </>
           ) : (
             <>
               <h2 className="margin-rule pl-3.5 font-display text-[28px] text-ink-deep">लॉगिन</h2>
-              <p className="mt-1 pl-3.5 text-[15px] text-muted">तुमच्या वर्गाचे वापरकर्ता नाव व पासवर्ड वापरा.</p>
+              <p className="mt-1 pl-3.5 text-[15px] text-muted">तुमचे वापरकर्ता नाव व पासवर्ड वापरा — कोणत्याही मोबाईल, टॅबलेट किंवा संगणकावर.</p>
               <form
                 className="mt-6 grid gap-4"
                 onSubmit={async (e) => {
@@ -228,8 +256,9 @@ export function LoginPage({ firstRun = false }: { firstRun?: boolean }) {
                     return;
                   }
                   setBusy(true);
+                  setInfo('');
                   try {
-                    const st = await login(username, password, year, remember);
+                    const st = await login(username, password, year);
                     signedIn(st);
                   } catch (x) {
                     setErr(x instanceof LoginError ? x.message : 'लॉगिन करताना अडचण आली.');
@@ -291,11 +320,14 @@ export function LoginPage({ firstRun = false }: { firstRun?: boolean }) {
                     </select>
                   </div>
                 ) : null}
-                <Checkbox label="या उपकरणावर लॉगिन ठेवा (30 दिवस)" hint="इतर शिक्षकही हेच उपकरण वापरत असल्यास हे निवडू नका." checked={remember} onChange={setRemember} />
+                {info ? <Notice kind="ok">{info}</Notice> : null}
                 {err ? <Notice kind="error">{err}</Notice> : null}
                 <Button type="submit" variant="primary" loading={busy} className="w-full text-[17px]">
-                  लॉगिन करा
+                  {busy ? 'लॉगिन होत आहे…' : 'लॉगिन करा'}
                 </Button>
+                <button type="button" className="justify-self-center text-[15px] font-semibold text-ink underline underline-offset-4" onClick={() => setMode('recover')}>
+                  पासवर्ड / वापरकर्ता नाव विसरलात?
+                </button>
               </form>
               <div className="mt-4 grid gap-2">
                 <p className="text-center text-[14px] text-muted">नवीन शिक्षक आहात?</p>

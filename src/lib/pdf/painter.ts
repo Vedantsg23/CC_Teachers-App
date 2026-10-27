@@ -18,6 +18,8 @@ export interface PaintOptions {
   title?: string;
   author?: string;
   onProgress?: (done: number, total: number) => void;
+  /** Enlarge every page by this factor (√2 prints an A4 layout on A3 paper). */
+  pageScale?: number;
 }
 
 interface Rgba extends RGB {
@@ -115,10 +117,13 @@ class PagePainter {
   private fonts: Record<string, HbFont>;
   private images: Map<Element, JpegImage | null>;
 
-  constructor(doc: PdfDocument, fonts: Record<string, HbFont>, images: Map<Element, JpegImage | null>) {
+  private pageScale: number;
+
+  constructor(doc: PdfDocument, fonts: Record<string, HbFont>, images: Map<Element, JpegImage | null>, pageScale = 1) {
     this.doc = doc;
     this.fonts = fonts;
     this.images = images;
+    this.pageScale = pageScale;
   }
 
   paint(page: HTMLElement) {
@@ -128,7 +133,8 @@ class PagePainter {
     this.pageTop = r.top;
     const wPt = page.offsetWidth * PX_TO_PT;
     this.pageHpt = page.offsetHeight * PX_TO_PT;
-    this.doc.beginPage({ width: wPt, height: this.pageHpt });
+    const k = this.pageScale;
+    this.doc.beginPage({ width: wPt * k, height: this.pageHpt * k, contentScale: k });
     this.walk(page);
     this.doc.endPage();
   }
@@ -274,6 +280,8 @@ export async function pagesToPdf(pages: HTMLElement[], opts: PaintOptions = {}):
   if (document.fonts?.ready) await document.fonts.ready;
   const fonts = await loadHbFonts(FONT_URLS);
   const images = new Map<Element, JpegImage | null>();
+  // identical pictures (the logo on every student's card) are rasterized once
+  const bySrc = new Map<string, JpegImage | null>();
   for (const page of pages) {
     const scale = page.getBoundingClientRect().width / page.offsetWidth || 1;
     for (const el of page.querySelectorAll('img, svg')) {
@@ -281,15 +289,25 @@ export async function pagesToPdf(pages: HTMLElement[], opts: PaintOptions = {}):
       if (el.closest('[data-pdf-skip]')) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 1 || r.height < 1) continue;
-      try {
-        images.set(el, await rasterize(el, r.width / scale, r.height / scale));
-      } catch {
-        images.set(el, null);
+      const w = r.width / scale;
+      const h = r.height / scale;
+      const key = el instanceof HTMLImageElement ? `${el.currentSrc || el.src}|${w.toFixed(1)}|${h.toFixed(1)}|${getComputedStyle(el).objectFit}` : '';
+      if (key && bySrc.has(key)) {
+        images.set(el, bySrc.get(key) ?? null);
+        continue;
       }
+      let img: JpegImage | null;
+      try {
+        img = await rasterize(el, w, h);
+      } catch {
+        img = null;
+      }
+      images.set(el, img);
+      if (key) bySrc.set(key, img);
     }
   }
   const doc = new PdfDocument();
-  const painter = new PagePainter(doc, fonts, images);
+  const painter = new PagePainter(doc, fonts, images, opts.pageScale ?? 1);
   for (let i = 0; i < pages.length; i++) {
     painter.paint(pages[i]);
     opts.onProgress?.(i + 1, pages.length);

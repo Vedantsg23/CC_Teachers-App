@@ -13,12 +13,16 @@ export const COLUMNS: { key: Key; header: string; aliases: string[]; width: numb
   { key: 'gender', header: 'लिंग', aliases: ['gender', 'sex'], width: 8 },
   { key: 'dob', header: 'जन्मतारीख', aliases: ['जन्म दिनांक', 'जन्मदिनांक', 'dob', 'dateofbirth', 'birthdate'], width: 12 },
   { key: 'regNo', header: 'रजिस्टर क्र.', aliases: ['रजि. क्र.', 'रजि.नं.', 'रजिनं', 'रजिक्र', 'जनरल रजिस्टर क्र', 'grno', 'registerno', 'regno', 'admissionno'], width: 11 },
-  { key: 'saralId', header: 'सरल आयडी', aliases: ['विद्यार्थी आयडी', 'studentid', 'saralid'], width: 14 },
-  { key: 'pen', header: 'UDISE PEN', aliases: ['pen', 'udisepen', 'penno'], width: 14 },
+  { key: 'pen', header: 'PEN', aliases: ['UDISE PEN', 'pen', 'udisepen', 'penno', 'पेन नंबर', 'पेन'], width: 14 },
+  { key: 'aadhaar', header: 'आधार क्र.', aliases: ['आधार', 'आधार क्रमांक', 'आधार नंबर', 'aadhaar', 'aadhar', 'aadhaarno', 'uid'], width: 15 },
+  { key: 'apaar', header: 'अपार आयडी', aliases: ['अपार', 'अपार क्रमांक', 'apaar', 'apaarid', 'apar', 'aparid'], width: 15 },
   { key: 'motherName', header: 'आईचे नाव', aliases: ['mother', 'mothername'], width: 18 },
   { key: 'fatherName', header: 'वडिलांचे नाव', aliases: ['father', 'fathername'], width: 22 },
+  { key: 'fatherOccupation', header: 'वडिलांचा व्यवसाय', aliases: ['fatheroccupation'], width: 16 },
+  { key: 'motherOccupation', header: 'आईचा व्यवसाय', aliases: ['motheroccupation'], width: 16 },
   { key: 'guardianName', header: 'पालकाचे नाव', aliases: ['guardian', 'guardianname'], width: 22 },
   { key: 'caste', header: 'जात', aliases: ['caste'], width: 14 },
+  { key: 'subCaste', header: 'पोटजात', aliases: ['subcaste'], width: 12 },
   { key: 'category', header: 'प्रवर्ग', aliases: ['category', 'जातप्रवर्ग'], width: 10 },
   { key: 'religion', header: 'धर्म', aliases: ['religion'], width: 10 },
   { key: 'mobile', header: 'मोबाईल', aliases: ['मोबाईल क्र', 'मोबाईलक्रमांक', 'mobile', 'phone', 'mobileno'], width: 13 },
@@ -101,6 +105,10 @@ export function rowsToStudents(rows: string[][], classId: string): { rows: Impor
           break;
         case 'mobile':
           st.mobile = normalizeDigits(v).replace(/\D/g, '').slice(-10);
+          break;
+        case 'aadhaar':
+        case 'apaar':
+          st[k] = normalizeDigits(v).replace(/[\s-]/g, '').slice(0, 20);
           break;
         default:
           (st as unknown as Record<string, string>)[k] = v.slice(0, 300);

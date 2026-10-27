@@ -110,7 +110,7 @@ export const CATEGORIES: { code: string; label: string; short: string }[] = [
   { code: 'SBC', label: 'विशेष मागास प्रवर्ग (SBC)', short: 'वि.मा.प्र.' },
   { code: 'SEBC', label: 'सामाजिक व शैक्षणिक मागास वर्ग (SEBC)', short: 'SEBC' },
   { code: 'EWS', label: 'आर्थिक दुर्बल घटक (EWS)', short: 'EWS' },
-  { code: 'OPEN', label: 'खुला (Open)', short: 'खुला' },
+  { code: 'OPEN', label: 'बिगर मागास (Open)', short: 'बि.मा.' },
 ];
 
 /**

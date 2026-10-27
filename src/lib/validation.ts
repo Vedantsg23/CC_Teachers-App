@@ -23,6 +23,10 @@ export const MSG = {
   passwordShort: 'पासवर्ड किमान 6 अक्षरांचा असावा.',
   passwordMismatch: 'दोन्ही पासवर्ड सारखे नाहीत.',
   udiseInvalid: 'UDISE क्रमांक 11 अंकी असावा.',
+  aadhaarInvalid: 'आधार क्रमांक 12 अंकी असावा.',
+  aadhaarCheck: 'आधार क्रमांक तपासा — अंक चुकीचे असू शकतात.',
+  apaarInvalid: 'अपार आयडी 12 अंकी असावा.',
+  measureInvalid: 'कृपया अंकांमध्ये भरा (उदा. 24.5).',
 } as const;
 
 /** Convert Devanagari digits to ASCII so "८५" is accepted as 85. */
@@ -90,7 +94,57 @@ export function validateStudent(s: Partial<Student>, others: Student[]): Student
   if (reg && others.some((o) => o.id !== s.id && o.regNo.trim() === reg)) warnings.regNo = MSG.dupReg;
   const mob = normalizeDigits(s.mobile ?? '').replace(/[\s-]/g, '');
   if (mob && !/^(\+?91)?[6-9]\d{9}$/.test(mob)) errors.mobile = MSG.mobileInvalid;
+  const aadhaar = digitsOnly(s.aadhaar ?? '');
+  if (aadhaar) {
+    if (!/^\d{12}$/.test(aadhaar)) errors.aadhaar = MSG.aadhaarInvalid;
+    else if (!/^[2-9]/.test(aadhaar) || !verhoeffValid(aadhaar)) warnings.aadhaar = MSG.aadhaarCheck;
+  }
+  const apaar = digitsOnly(s.apaar ?? '');
+  if (apaar && !/^\d{12}$/.test(apaar)) errors.apaar = MSG.apaarInvalid;
+  const h = s.health;
+  if (h) {
+    for (const k of ['weight1', 'height1', 'weight2', 'height2'] as const) {
+      const v = normalizeDigits(h[k] ?? '').trim();
+      if (v && !/^\d{1,3}(\.\d{1,2})?$/.test(v)) errors[`health.${k}`] = MSG.measureInvalid;
+    }
+  }
   return { errors, warnings };
+}
+
+/** Strip spaces/dashes and convert Devanagari digits ("१२३४ ५६७८" → "12345678"). */
+export function digitsOnly(s: string): string {
+  return normalizeDigits(s).replace(/[\s-]/g, '');
+}
+
+/* Verhoeff checksum (the check digit scheme used by Aadhaar). */
+const VD = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+  [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+  [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+  [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+  [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+  [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+  [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+  [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+];
+const VP = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+  [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
+  [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+  [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+  [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+  [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+  [7, 0, 4, 6, 9, 1, 3, 2, 5, 8],
+];
+
+export function verhoeffValid(num: string): boolean {
+  let c = 0;
+  const digits = num.split('').reverse();
+  for (let i = 0; i < digits.length; i++) c = VD[c][VP[i % 8][Number(digits[i])]];
+  return c === 0;
 }
 
 export function validateUsername(u: string): string | null {

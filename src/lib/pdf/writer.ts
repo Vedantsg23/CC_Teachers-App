@@ -84,6 +84,8 @@ export interface PdfPageOptions {
   /** Page size in PDF points. */
   width: number;
   height: number;
+  /** Scale applied to everything drawn on the page (e.g. √2 to print an A4 layout on A3). */
+  contentScale?: number;
 }
 
 export interface JpegImage {
@@ -97,6 +99,8 @@ export class PdfDocument {
   private pages: number[] = [];
   private glyphForms = new Map<string, { name: string; id: number }>();
   private images: { name: string; id: number }[] = [];
+  /** The same image (e.g. the school logo on every page) is stored once. */
+  private imageIds = new Map<JpegImage, { name: string; id: number }>();
   private pageXObjects = new Set<string>();
   private allXObjects = new Map<string, number>();
   private ops: string[] = [];
@@ -141,7 +145,9 @@ export class PdfDocument {
 
   endPage() {
     if (!this.page) return;
-    const contentId = this.add(this.stream('<<', this.ops.join('\n')));
+    const k = this.page.contentScale ?? 1;
+    const body = this.ops.join('\n');
+    const contentId = this.add(this.stream('<<', k !== 1 ? `q ${num(k)} 0 0 ${num(k)} 0 0 cm\n${body}\nQ` : body));
     const xo = [...this.pageXObjects].map((n) => `/${n} ${this.allXObjects.get(n)} 0 R`).join(' ');
     const pageId = this.add(
       `<< /Type /Page /Parent ${this.pagesRootId} 0 R /MediaBox [0 0 ${num(this.page.width)} ${num(
@@ -250,13 +256,19 @@ export class PdfDocument {
 
   /** Place a JPEG image (x, y = bottom-left in PDF points). */
   drawJpeg(img: JpegImage, x: number, y: number, w: number, h: number) {
-    const name = `I${this.images.length}`;
-    const id = this.add({
-      dict: `<< /Type /XObject /Subtype /Image /Width ${img.width} /Height ${img.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.data.length}`,
-      data: img.data,
-    });
-    this.images.push({ name, id });
-    this.allXObjects.set(name, id);
+    let ref = this.imageIds.get(img);
+    if (!ref) {
+      const name = `I${this.images.length}`;
+      const id = this.add({
+        dict: `<< /Type /XObject /Subtype /Image /Width ${img.width} /Height ${img.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.data.length}`,
+        data: img.data,
+      });
+      ref = { name, id };
+      this.images.push(ref);
+      this.imageIds.set(img, ref);
+      this.allXObjects.set(name, id);
+    }
+    const { name } = ref;
     this.pageXObjects.add(name);
     this.ops.push(`q ${num(w)} 0 0 ${num(h)} ${num(x)} ${num(y)} cm /${name} Do Q`);
   }

@@ -8,8 +8,9 @@ Follows the required offline procedure:
 Also checks: two-teacher isolation, validation messages, backup/restore,
 school leaving certificate, admin password reset, mobile + desktop screens.
 
-Usage:
-  npm run build && npx vite preview --port 4173 --strictPort &
+Usage (device-only mode; the online accounts have e2e/cloud_test.py):
+  VITE_CLOUD_URL=off npx vite build --outDir dist-local
+  npx vite preview --outDir dist-local --port 4173 --strictPort &
   python3 e2e/e2e_test.py            # BASE_URL=http://localhost:4173/ by default
 Outputs screenshots and PDFs to e2e/out/.
 """
@@ -58,9 +59,13 @@ def pdf_pages(path: str) -> int:
 def setup(pg: Page):
     """First run: the headmaster sets up the school + admin account (optional path)."""
     pg.goto(BASE)
+    pg.wait_for_selector('#login-user', timeout=20000)
+    shot(pg, '01-first-run-login')
+    check('first run opens लॉगिन with “नवीन खाते तयार करा”', pg.get_by_role('button', name='नवीन खाते तयार करा').count() == 1)
+    pg.get_by_role('button', name='नवीन खाते तयार करा').click()
     pg.wait_for_selector('text=नवीन शिक्षक खाते', timeout=20000)
     shot(pg, '01-first-run-register')
-    check('first run opens teacher registration', pg.get_by_role('radio', name='इयत्ता सातवी').count() == 1)
+    check('teacher registration form (इयत्ता 1–8)', pg.get_by_role('radio', name='इयत्ता सातवी').count() == 1)
     pg.get_by_role('button', name='आधी शाळेची मांडणी करा').click()
     pg.get_by_label(re.compile('^शाळेचे नाव')).fill('जिल्हा परिषद प्राथमिक शाळा नमुनागाव')
     pg.get_by_label('UDISE क्रमांक').fill('27250800000')
@@ -76,8 +81,8 @@ def setup(pg: Page):
     check('headmaster set-up (school + admin) on first run', True)
 
 
-def register(pg: Page, std_word: str, section: str, name: str, user: str, password: str, open_form=True):
-    """A teacher creates their own account: standard → section/name → username/password."""
+def register(pg: Page, std_word: str, section: str, name: str, user: str, password: str, open_form=True, phone='9876543210'):
+    """A teacher creates their own account: standard → section/name → username/password/mobile."""
     if open_form:
         pg.get_by_role('button', name='नवीन खाते तयार करा').click()
     pg.get_by_role('radio', name=f'इयत्ता {std_word}').click()
@@ -86,6 +91,7 @@ def register(pg: Page, std_word: str, section: str, name: str, user: str, passwo
     pg.get_by_label(re.compile('^वापरकर्ता नाव')).fill(user)
     pg.get_by_label(PW).fill(password)
     pg.get_by_label(PW2).fill(password)
+    pg.get_by_label(re.compile('^मोबाईल नंबर')).fill(phone)
     pg.get_by_role('button', name='खाते तयार करा').click()
 
 
@@ -160,7 +166,13 @@ def main():
         check('student name is required (Marathi message)', True)
         pg.get_by_label(re.compile('^विद्यार्थ्याचे पूर्ण नाव')).fill(STUDENT)
         pg.get_by_label('जन्मतारीख').fill('2014-09-22')
-        pg.get_by_label('रजिस्टर क्रमांक (जनरल रजि.)').fill('4801')
+        pg.get_by_label('जनरल रजिस्टर क्रमांक').fill('4801')
+        pg.get_by_label('आधार क्रमांक').fill('2341 2341 2346')
+        pg.get_by_label('अपार आयडी (APAAR ID)').fill('123456789012')
+        pg.get_by_label('वडिलांचा व्यवसाय').fill('शेती')
+        pg.get_by_label('वजन (कि.ग्रॅ.)').first.fill('31')
+        pg.get_by_label('उंची (से.मी.)').first.fill('136')
+        check('no सरल आयडी or photo on the student form', pg.get_by_text('सरल').count() == 0 and pg.get_by_text('फोटो निवडा').count() == 0)
         pg.get_by_label('आईचे नाव').fill('सुनीता पाटील')
         pg.get_by_label('वडिलांचे नाव').fill('संजय पाटील')
         pg.get_by_label('जात प्रवर्ग').select_option('OBC')
@@ -350,7 +362,7 @@ def main():
             check(f'report "{k}" PDF', n >= 1, f'{n} page(s)')
         both = lambda k: 'प्रथम सत्र' in page_text[k] and 'द्वितीय सत्र' in page_text[k]
         pc = page_text['progress-card']
-        check('प्रगती कार्ड: मुखपृष्ठ (माहिती + मासिक उपस्थिती) and page 2 (श्रेणी, 3 विशेष नोंदी, 3 स्वाक्षऱ्या)', all(w in pc for w in ['प्रगती पत्रक', 'विद्यार्थ्याची माहिती', 'मासिक उपस्थिती', 'विषयनिहाय श्रेणी', 'विशेष नोंद', 'आवड / छंद', 'सुधारणा आवश्यक', 'पालक स्वाक्षरी', 'वर्गशिक्षक स्वाक्षरी', 'मुख्याध्यापक स्वाक्षरी']))
+        check('प्रगतीपत्रक as in the sample: cover (PEN ID, आधार, आरोग्य), attendance, श्रेणी तक्ता, both सत्र cards', all(w in pc for w in ['विद्यार्थी प्रगतीपत्रक', 'PEN ID', 'आधार क्र.', 'आरोग्यविषयक माहिती', 'विद्यार्थी उपस्थिती', 'श्रेणी तक्ता', 'विद्यार्थी प्रगतीपत्रक - प्रथम सत्र', 'विद्यार्थी प्रगतीपत्रक - द्वितीय सत्र', 'विशेष प्रगती', 'आवड छंद', 'सुधारणा आवश्यक', 'वर्गशिक्षक', 'मुख्याध्यापक', 'पालक']) and 'सरल' not in pc)
         check('नोंदपत्र: both सत्र on one page per student', both('student-wise') and 'प्राप्त गुण' in page_text['student-wise'] and 'गुण पैकी' in page_text['student-wise'])
         check('वर्णनात्मक नोंद वही: both सत्र side by side', both('remarks') and 'सुधारणा आवश्यक' in page_text['remarks'])
         check('निकाल पत्रक shows both सत्र per subject', both('result-sheet') and 'संवर्ग' in page_text['result-sheet'])
@@ -365,16 +377,43 @@ def main():
         info = subprocess.run(['pdfinfo', f], capture_output=True, text=True).stdout
         check('subject-wise register printable on A4 landscape', '842' in info.split('Page size:')[1].split('x')[0], info.split('Page size:')[1].strip()[:30])
 
+        # ---------------- this round: logo, सत्र choice, totals, A3/A4 ----------------
+        info = subprocess.run(['pdfinfo', os.path.join(OUT, 'report-result-sheet.pdf')], capture_output=True, text=True).stdout
+        check('वार्षिक निकाल पत्रक prints on A3 by default', '(A3)' in info, info.split('Page size:')[1].strip()[:40])
+        go(pg, '/reports/result-sheet?paper=A4')
+        pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+        pg.wait_for_timeout(500)
+        f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'report-result-sheet-a4.pdf'))
+        info = subprocess.run(['pdfinfo', f], capture_output=True, text=True).stdout
+        check('… and on A4 when chosen', '(A4)' in info, info.split('Page size:')[1].strip()[:40])
+        cr = page_text['class-register']
+        check('वर्गनिहाय CCE नोंद (गुण–श्रेणी): सर्व विषयांचे एकूण व श्रेणी', 'सर्व विषय' in cr and 'एकूण' in cr)
+        for key, t, other in [('student-wise', '1', 'द्वितीय सत्र'), ('remarks', '2', 'प्रथम सत्र')]:
+            go(pg, f'/reports/{key}?terms={t}&student={id1}')
+            pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+            pg.wait_for_timeout(500)
+            txt = '\n'.join(pg.locator('.report-page-wrap').all_inner_texts())
+            check(f'{key}: one सत्र only (terms={t})', other not in txt and ('प्रथम सत्र' if t == '1' else 'द्वितीय सत्र') in txt)
+        go(pg, '/reports/cover')
+        pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+        check('जिल्हा परिषद logo on the मुखपृष्ठ', pg.locator('.report-page-wrap img.cover-logo').count() == 1)
+        go(pg, f'/students/{id1}/edit')
+        expect(pg.get_by_label('जात प्रवर्ग')).to_be_visible()
+        opts = pg.get_by_label('जात प्रवर्ग').locator('option').all_inner_texts()
+        check('प्रवर्ग shows बिगर मागास (not खुला)', any('बिगर मागास' in o for o in opts) and not any('खुला' in o for o in opts))
+
         # ---------------- school leaving certificate ----------------
         go(pg, f'/certificates/new?student={id2}')
-        expect(pg.get_by_label('जन्मदिनांक (अक्षरी)')).to_be_visible()
-        pg.get_by_label('जन्मदिनांक (अंकी)').fill('2014-11-07')
-        check('date of birth in Marathi words', pg.get_by_label('जन्मदिनांक (अक्षरी)').input_value() == 'सात नोव्हेंबर दोन हजार चौदा')
+        expect(pg.get_by_label('जन्म दिनांक अक्षरी')).to_be_visible()
+        pg.get_by_label('इ. सनाप्रमाणे जन्म दिनांक').fill('2014-11-07')
+        check('date of birth in Marathi words', pg.get_by_label('जन्म दिनांक अक्षरी').input_value() == 'सात नोव्हेंबर दोन हजार चौदा')
+        check('दाखला filled from the student record (name parts)', pg.get_by_label('विद्यार्थ्याचे नाव', exact=True).input_value() == STUDENT2.split()[0] and pg.get_by_label('आडनाव').input_value() == STUDENT2.split()[-1])
         pg.get_by_label('शाळा सोडण्याचे कारण').select_option('पुढील शिक्षणासाठी')
         pg.get_by_role('button', name='जतन करा व पूर्वदृश्य').click()
         pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
         pg.wait_for_timeout(600)
         shot(pg, '09-lc-preview', full=False)
+        check('दाखला: जिल्हा परिषद form with logo and boxed आधार / अपार', pg.locator('.report-page-wrap img.lcz-logo').count() == 1 and pg.get_by_text('शाळा सोडल्याचे प्रमाणपत्र').count() > 0 and pg.get_by_text('अपार आय.डी. नं.').count() > 0)
         f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'leaving-certificate.pdf'))
         check('school leaving certificate PDF', pdf_pages(f) == 1)
         pg.get_by_role('button', name='बंद करा').first.click()

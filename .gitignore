@@ -25,3 +25,8 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 *.log
+
+# e2e builds / outputs (device-only and online-account test builds)
+dist-local/
+dist-cloud/
+e2e/out-cloud/

@@ -47,6 +47,8 @@ const P: Record<string, string> = {
   card: 'M3 6h18v12H3zM7 10h4M7 14h7',
   copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
   more: 'M12 6h.01M12 12h.01M12 18h.01',
+  cloud: 'M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.8 9 4.75 4.75 0 0 1 17.25 18.5Z',
+  phone: 'M8 2.5h8A1.5 1.5 0 0 1 17.5 4v16a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5ZM11 18.5h2',
 };
 
 export type IconName = keyof typeof P;

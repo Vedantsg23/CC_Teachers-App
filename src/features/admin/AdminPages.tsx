@@ -10,13 +10,14 @@ import { isValidYear, nextYear, todayIso } from '../../lib/format';
 import { SECTIONS, STANDARD_WORDS, standardLabel } from '../../lib/labels';
 import * as repo from '../../lib/repo';
 import { track } from '../../lib/saveStatus';
-import { downloadText, imageFileToDataUrl, readFileText } from '../../lib/share';
+import { downloadText, readFileText } from '../../lib/share';
 import type { LcTemplate, School, User } from '../../lib/types';
 import { validateUdise } from '../../lib/validation';
 import { Icon } from '../../components/Icon';
 import { useFeedback } from '../../components/feedback';
 import { ReportViewer } from '../../components/report/ReportViewer';
 import { AreaField, Button, Checkbox, Modal, Notice, PageHeader, Panel, SelectField, TextField } from '../../components/ui';
+import { LogoPicker } from '../../components/LogoPicker';
 import { ChangePasswordForm } from '../auth/ChangePassword';
 import { LeavingCertificatePage } from '../reports/templates/certificate';
 
@@ -51,6 +52,7 @@ function SchoolAdmin() {
           <TextField label="दूरध्वनी" value={s.phone} onChange={(v) => setS({ ...s, phone: v })} inputMode="tel" />
           <TextField label="ईमेल" value={s.email} onChange={(v) => setS({ ...s, email: v })} type="email" />
           <TextField label="शाळेचा पत्ता" value={s.address} onChange={(v) => setS({ ...s, address: v })} className="sm:col-span-2" />
+          <LogoPicker school={s} onChange={setS} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button
@@ -64,21 +66,6 @@ function SchoolAdmin() {
           >
             जतन करा
           </Button>
-          <label className="btn btn-secondary cursor-pointer">
-            <Icon name="camera" />
-            शाळेचा लोगो
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (f) setS({ ...s, logo: await imageFileToDataUrl(f, 300, 300, 0.9) });
-              }}
-            />
-          </label>
-          {s.logo ? <img src={s.logo} alt="शाळेचा लोगो" className="h-12 w-12 rounded object-contain ring-1 ring-rule" /> : null}
         </div>
       </Panel>
       <Panel title="शैक्षणिक वर्ष">
@@ -257,23 +244,34 @@ const SAMPLE: Record<string, string> = {
   certNo: '25',
   issueDate: todayIso(),
   regNo: '5123',
-  saralId: '2025000001',
-  pen: '',
+  pen: '27250000001',
+  aadhaar: '',
+  apaar: '',
+  email: '',
   fullName: 'नमुना विद्यार्थी नाव',
+  firstName: 'नमुना',
+  fatherFirst: 'वडिलांचे नाव',
+  surname: 'आडनाव',
   motherName: 'नमुना आईचे नाव',
   fatherName: 'नमुना वडिलांचे नाव',
   nationality: 'भारतीय',
   motherTongue: 'मराठी',
   religion: 'हिंदू',
   caste: '',
+  subCaste: '',
   category: '',
   birthPlace: 'पुणे',
+  birthTaluka: 'हवेली',
+  birthDistrict: 'पुणे',
+  birthState: 'महाराष्ट्र',
+  birthCountry: 'भारत',
   dob: '2013-11-28',
   dobWords: 'अठ्ठावीस नोव्हेंबर दोन हजार तेरा',
+  previousSchool: '',
   admissionDate: '2020-06-15',
   admissionStd: 'पहिली',
   currentStd: 'सातवी',
-  lastStd: 'इयत्ता सातवी — जून 2026 पासून',
+  lastStd: 'इयत्ता सातवी (7 वी) — जून 2026 पासून',
   progress: 'चांगली',
   conduct: 'चांगली',
   leftDate: todayIso(),
@@ -301,35 +299,57 @@ function CertificateAdmin() {
   return (
     <div className="grid gap-4">
       <PageHeader title="शाळा सोडल्याचा दाखला — नमुना" subtitle="सर्व वर्गांच्या दाखल्यांसाठी एकच नमुना" />
-      <Notice kind="warn">हा दाखला शाळेच्या नोंदींवरून तयार होणारा नमुना आहे. तुमच्या शाळेसाठी शासनाचा/मंडळाचा अधिकृत नमुना असल्यास त्याप्रमाणे शीर्षक, रकाने, क्रम व मजकूर येथे बदला.</Notice>
-      <Panel title="शीर्षक व मजकूर">
+      <Panel title="दाखल्याचा प्रकार">
         <div className="grid gap-4">
-          <TextField label="शीर्षक" value={t.title} onChange={(v) => setT({ ...t, title: v })} />
-          <TextField label="शीर्षकाखालील सूचना" value={t.headerNote} onChange={(v) => setT({ ...t, headerNote: v })} />
-          <AreaField label="प्रमाणपत्राचा मजकूर" value={t.certText} onChange={(v) => setT({ ...t, certText: v })} rows={3} hint="{regNo} सारखे रकाने आपोआप भरले जातात." />
-          <div className="grid gap-3 sm:grid-cols-3">
-            {t.signLabels.map((l, i) => (
-              <TextField key={i} label={`स्वाक्षरी ${i + 1}`} value={l} onChange={(v) => setT({ ...t, signLabels: t.signLabels.map((x, j) => (j === i ? v : x)) })} />
-            ))}
-          </div>
+          <SelectField
+            label="नमुना"
+            value={t.layout === 'list' ? 'list' : 'zp'}
+            onChange={(v) => setT({ ...t, layout: v === 'list' ? 'list' : 'zp' })}
+            options={[
+              { value: 'zp', label: 'जिल्हा परिषद नमुना — शाळा सोडल्याचे प्रमाणपत्र (छापील दाखल्याप्रमाणे)' },
+              { value: 'list', label: 'साधा नमुना — रकाने, क्रम व मजकूर बदलता येतात' },
+            ]}
+          />
+          {t.layout !== 'list' ? (
+            <AreaField label="शेवटचे वाक्य" value={t.zpCertText ?? ''} onChange={(v) => setT({ ...t, zpCertText: v })} rows={2} hint="उदा. दाखला देण्यात येतो की, वरील माहिती शाळेतील जनरल रजिस्टर नं. १ प्रमाणे आहे." />
+          ) : null}
         </div>
       </Panel>
-      <Panel title="रकाने (क्रम व नावे)">
-        <ul className="divide-y divide-rule">
-          {t.fields.map((f, i) => (
-            <li key={f.key} className="flex flex-wrap items-center gap-2 py-2">
-              <input type="checkbox" className="h-5 w-5 accent-[#1e3a6e]" checked={f.enabled} aria-label={`${f.label} दाखवा`} onChange={(e) => setT({ ...t, fields: t.fields.map((x, j) => (j === i ? { ...x, enabled: e.target.checked } : x)) })} />
-              <input className="field-input min-w-0 flex-1 !min-h-[40px]" value={f.label} aria-label="रकान्याचे नाव" onChange={(e) => setT({ ...t, fields: t.fields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} />
-              <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label="वर">
-                ↑
-              </Button>
-              <Button size="sm" variant="ghost" disabled={i === t.fields.length - 1} onClick={() => move(i, 1)} aria-label="खाली">
-                ↓
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+      {t.layout === 'list' ? (
+        <>
+          <Notice kind="warn">हा दाखला शाळेच्या नोंदींवरून तयार होणारा नमुना आहे. तुमच्या शाळेसाठी शासनाचा/मंडळाचा अधिकृत नमुना असल्यास त्याप्रमाणे शीर्षक, रकाने, क्रम व मजकूर येथे बदला.</Notice>
+          <Panel title="शीर्षक व मजकूर">
+            <div className="grid gap-4">
+              <TextField label="शीर्षक" value={t.title} onChange={(v) => setT({ ...t, title: v })} />
+              <TextField label="शीर्षकाखालील सूचना" value={t.headerNote} onChange={(v) => setT({ ...t, headerNote: v })} />
+              <AreaField label="प्रमाणपत्राचा मजकूर" value={t.certText} onChange={(v) => setT({ ...t, certText: v })} rows={3} hint="{regNo} सारखे रकाने आपोआप भरले जातात." />
+              <div className="grid gap-3 sm:grid-cols-3">
+                {t.signLabels.map((l, i) => (
+                  <TextField key={i} label={`स्वाक्षरी ${i + 1}`} value={l} onChange={(v) => setT({ ...t, signLabels: t.signLabels.map((x, j) => (j === i ? v : x)) })} />
+                ))}
+              </div>
+            </div>
+          </Panel>
+          <Panel title="रकाने (क्रम व नावे)">
+            <ul className="divide-y divide-rule">
+              {t.fields.map((f, i) => (
+                <li key={f.key} className="flex flex-wrap items-center gap-2 py-2">
+                  <input type="checkbox" className="h-5 w-5 accent-[#1e3a6e]" checked={f.enabled} aria-label={`${f.label} दाखवा`} onChange={(e) => setT({ ...t, fields: t.fields.map((x, j) => (j === i ? { ...x, enabled: e.target.checked } : x)) })} />
+                  <input className="field-input min-w-0 flex-1 !min-h-[40px]" value={f.label} aria-label="रकान्याचे नाव" onChange={(e) => setT({ ...t, fields: t.fields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} />
+                  <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label="वर">
+                    ↑
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={i === t.fields.length - 1} onClick={() => move(i, 1)} aria-label="खाली">
+                    ↓
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </>
+      ) : (
+        <Notice>जिल्हा परिषदेच्या छापील दाखल्याप्रमाणे सर्व रकाने येतात आणि विद्यार्थ्याच्या माहितीवरून (आधार, अपार, पेन, जन्मस्थळ इ.) आपोआप भरतात. दाखला तयार करताना प्रत्येक रकाना बदलता येतो.</Notice>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button
           variant="primary"

@@ -17,6 +17,8 @@ export interface ReportCtx {
 
 export interface ReportOpts {
   term: Term;
+  /** प्रथम, द्वितीय or both सत्र (नोंदपत्र, वर्णनात्मक नोंद वही, प्रगती कार्ड). */
+  terms: Term[];
   period: Period;
   subject: string; // subject id or 'all'
   student: string; // student id or 'all'

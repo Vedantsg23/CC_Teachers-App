@@ -1,0 +1,13 @@
+{
+  "name": "cce-local-backend",
+  "private": true,
+  "description": "Local stand-in for the Supabase backend (same SQL) used by the end-to-end tests.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "embedded-postgres": "17.5.0-beta.15",
+    "pg": "8.13.1"
+  }
+}

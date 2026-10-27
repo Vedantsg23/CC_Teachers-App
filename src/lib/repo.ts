@@ -113,9 +113,10 @@ export async function getLcTemplate(): Promise<LcTemplate> {
   const def = defaultLcTemplate();
   const saved = row?.value as LcTemplate | undefined;
   if (!saved) return def;
-  // keep any new default fields that older saved templates do not have
-  const keys = new Set(saved.fields.map((f) => f.key));
-  return { ...def, ...saved, fields: [...saved.fields, ...def.fields.filter((f) => !keys.has(f.key))] };
+  // keep any new default fields that older saved templates do not have; सरल आयडी is no longer used
+  const fields = (saved.fields ?? []).filter((f) => f.key !== 'saralId');
+  const keys = new Set(fields.map((f) => f.key));
+  return { ...def, ...saved, fields: [...fields, ...def.fields.filter((f) => !keys.has(f.key))] };
 }
 
 export async function saveLcTemplate(t: LcTemplate): Promise<void> {
@@ -224,6 +225,11 @@ export function emptyStudent(classId: string): Student {
     regNo: '',
     saralId: '',
     pen: '',
+    aadhaar: '',
+    apaar: '',
+    fatherOccupation: '',
+    motherOccupation: '',
+    health: { weight1: '', height1: '', weight2: '', height2: '' },
     fullName: '',
     motherName: '',
     fatherName: '',
@@ -231,8 +237,13 @@ export function emptyStudent(classId: string): Student {
     gender: 'M',
     dob: '',
     birthPlace: '',
+    birthTaluka: '',
+    birthDistrict: '',
+    birthState: 'महाराष्ट्र',
+    birthCountry: 'भारत',
     religion: '',
     caste: '',
+    subCaste: '',
     category: '',
     nationality: 'भारतीय',
     motherTongue: 'मराठी',

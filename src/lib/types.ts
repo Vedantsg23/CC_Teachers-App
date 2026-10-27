@@ -54,6 +54,8 @@ export interface School {
   phone: string;
   email: string;
   logo: string; // data URL (JPEG/PNG) or ''
+  /** Which logo to print (default: the Pune ZP emblem; see src/lib/logo.ts). */
+  logoMode?: 'zp' | 'custom' | 'none';
 }
 
 export interface AppMeta {
@@ -70,6 +72,10 @@ export interface LcField {
 }
 
 export interface LcTemplate {
+  /** 'zp' = printed जिल्हा परिषद form (default); 'list' = configurable list below. */
+  layout?: 'zp' | 'list';
+  /** Closing sentence of the जिल्हा परिषद form. */
+  zpCertText?: string;
   title: string;
   headerNote: string; // e.g. "(या दाखल्यात कोणताही बदल करू नये.)"
   fields: LcField[];
@@ -97,6 +103,31 @@ export interface User {
   createdAt: number;
   updatedAt: number;
   lastLoginAt: number | null;
+  /** Linked to the online account (the id is then the cloud account id). */
+  cloud?: boolean;
+  /** Mobile number for password / login-ID recovery. */
+  phone?: string;
+  /** Created while offline: becomes an online account at the next online login. */
+  pendingPhone?: string;
+}
+
+/** Online sync state of one account on this device. */
+export interface SyncState {
+  acct: string;
+  token: string;
+  /** Last server change (sequence number) applied here. */
+  cursor: number;
+  lastSyncAt: number | null;
+  lastError: string;
+  /** The account profile (name / तुकडी) was changed here and must be sent. */
+  profileDirty?: boolean;
+}
+
+/** Fingerprint of a record as last exchanged with the server. */
+export interface SyncShadow {
+  key: string; // `${acct}|${tbl}|${id}`
+  acct: string;
+  hash: string;
 }
 
 export interface SessionRec {
@@ -201,17 +232,29 @@ export interface Student {
   classId: string;
   rollNo: number | null; // हजेरी क्रमांक
   regNo: string; // जनरल रजिस्टर क्रमांक
-  saralId: string; // विद्यार्थी आयडी (सरल)
+  /** Legacy (सरल आयडी) — no longer shown or printed. */
+  saralId: string;
   pen: string; // UDISE PEN
+  aadhaar?: string; // आधार क्रमांक (12 अंकी)
+  apaar?: string; // अपार आयडी (APAAR ID)
+  fatherOccupation?: string;
+  motherOccupation?: string;
+  /** वजन (कि.ग्रॅ.) / उंची (से.मी.) — प्रथम व द्वितीय सत्र */
+  health?: StudentHealth;
   fullName: string;
   motherName: string;
   fatherName: string;
   guardianName: string;
   gender: Gender;
   dob: string; // YYYY-MM-DD
-  birthPlace: string;
+  birthPlace: string; // जन्मस्थळ (गाव / शहर)
+  birthTaluka?: string;
+  birthDistrict?: string;
+  birthState?: string;
+  birthCountry?: string;
   religion: string;
   caste: string;
+  subCaste?: string; // पोटजात
   category: string; // प्रवर्ग code (see CATEGORIES)
   nationality: string;
   motherTongue: string;
@@ -220,12 +263,20 @@ export interface Student {
   admissionDate: string;
   admissionStd: string;
   previousSchool: string;
-  photo: string; // data URL or ''
+  /** Legacy student photo — no longer shown or printed. */
+  photo: string;
   status: 'active' | 'left';
   leaving: LeavingInfo | null;
   demo: boolean;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface StudentHealth {
+  weight1: string;
+  height1: string;
+  weight2: string;
+  height2: string;
 }
 
 export interface Assessment {

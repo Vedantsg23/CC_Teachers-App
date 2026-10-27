@@ -11,7 +11,7 @@ import { db } from '../../lib/db';
 import { defaultGrades, defaultResultRules, defaultSubjectWeights, distributeSummative, isCoScholasticCat } from '../../lib/defaults';
 import { seedDemo } from '../../lib/demo';
 import { marksWorkbook } from '../../lib/exportMarks';
-import { safeFileName } from '../../lib/format';
+import { fmtDate, fmtTime, safeFileName } from '../../lib/format';
 import { APP_VERSION, REMARK_CATEGORIES, REMARK_CATEGORY_LABEL, SECTIONS, standardLabel, TERM_LABEL } from '../../lib/labels';
 import * as repo from '../../lib/repo';
 import { track } from '../../lib/saveStatus';
@@ -22,6 +22,9 @@ import { validateUdise } from '../../lib/validation';
 import { Icon, type IconName } from '../../components/Icon';
 import { useFeedback } from '../../components/feedback';
 import { Button, Checkbox, InlineSelect, LinkButton, Notice, PageHeader, Panel, Segmented, SelectField, TextField } from '../../components/ui';
+import { LogoPicker } from '../../components/LogoPicker';
+import { api, cloudMessage } from '../../lib/cloud/api';
+import { markProfileDirty, syncAccount, useSyncStatus } from '../../lib/cloud/sync';
 import { ChangePasswordForm } from '../auth/ChangePassword';
 import { InstallHint } from '../auth/LoginPage';
 import { COLUMN_WIDTHS, studentsToRows } from '../students/studentSheet';
@@ -73,6 +76,10 @@ function ClassSection() {
               if (!name.trim()) return toast('कृपया वर्गशिक्षकाचे नाव भरा.', 'error');
               await track(repo.saveClassSection(scope, section));
               await track(db.users.update(user.id, { displayName: name.trim(), updatedAt: Date.now() }).then(() => undefined));
+              if (user.cloud) {
+                await markProfileDirty(user.id);
+                void syncAccount(user.id);
+              }
               toast('वर्गाची माहिती जतन झाली.');
             }}
           >
@@ -93,7 +100,9 @@ function ClassSection() {
           <TextField label="मुख्याध्यापकाचे नाव" value={s.headmaster} onChange={(v) => setS({ ...s, headmaster: v })} />
           <TextField label="माध्यम" value={s.medium} onChange={(v) => setS({ ...s, medium: v })} />
           <TextField label="मान्यता क्रमांक" value={s.recognitionNo} onChange={(v) => setS({ ...s, recognitionNo: v })} />
+          <TextField label="ईमेल" value={s.email} onChange={(v) => setS({ ...s, email: v })} type="email" />
           <TextField label="शाळेचा पत्ता" value={s.address} onChange={(v) => setS({ ...s, address: v })} className="sm:col-span-2" />
+          <LogoPicker school={s} onChange={setS} />
         </div>
         <p className="mt-5 mb-2 text-[14.5px] font-semibold text-ink-deep">निकाल पत्रक व संकलन तक्त्यांवरील स्वाक्षऱ्या</p>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -467,7 +476,6 @@ function ReportSection() {
       </div>
       <div className="mt-4 grid gap-3">
         <Checkbox label="अनेक पानांच्या अहवालांवर पृष्ठ क्रमांक छापा" checked={r.showPageNumbers} onChange={(v) => setR({ ...r, showPageNumbers: v })} />
-        <Checkbox label="प्रगती कार्डावर शाळेचे नाव छापा" checked={r.showSchoolOnCards} onChange={(v) => setR({ ...r, showSchoolOnCards: v })} />
         <Checkbox
           label="निकाल पत्रक व संकलन तक्त्यांत मराठी अंक (१, २, ३) छापा"
           hint="न निवडल्यास इंग्रजी अंक (1, 2, 3) छापले जातील."
@@ -620,11 +628,70 @@ function BackupSection() {
 }
 
 /* ------------------------------------------------------------------ */
+function OnlineAccount() {
+  const { user } = useTeacher();
+  const { toast } = useFeedback();
+  const st = useLiveQuery(() => db.syncState.get(user.id), [user.id]);
+  const status = useSyncStatus();
+  const [phone, setPhone] = useState('');
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!user.cloud) return null;
+  return (
+    <Panel title="ऑनलाइन खाते">
+      <p className="mb-3 text-[15px] text-muted">याच वापरकर्ता नावाने व पासवर्डने कोणत्याही मोबाईल, टॅबलेट किंवा संगणकावर लॉगिन करा — सर्व माहिती तिथे दिसेल. लॉगिन आपोआप संपत नाही; “बाहेर पडा” दाबेपर्यंत चालू राहते.</p>
+      <dl className="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[15px]">
+        <dt className="text-muted">मोबाईल नंबर</dt>
+        <dd className="font-semibold">{user.phone ? `${user.phone.slice(0, 2)}xxxxxx${user.phone.slice(-2)}` : '—'}</dd>
+        <dt className="text-muted">शेवटचे ऑनलाइन जतन</dt>
+        <dd>{st?.lastSyncAt ? `${fmtDate(new Date(st.lastSyncAt).toISOString().slice(0, 10))} ${fmtTime(st.lastSyncAt)}` : 'अजून नाही'}</dd>
+      </dl>
+      <Button icon="refresh" loading={status.kind === 'syncing'} onClick={async () => toast((await syncAccount(user.id)).ok ? 'सर्व माहिती ऑनलाइन जतन झाली.' : 'आत्ता ऑनलाइन जतन होऊ शकले नाही; इंटरनेट मिळताच आपोआप होईल.', 'info')}>
+        आत्ता ऑनलाइन जतन करा
+      </Button>
+      <h3 className="mt-5 mb-2 font-semibold text-ink-deep">मोबाईल नंबर बदला</h3>
+      <form
+        className="grid max-w-md gap-3"
+        noValidate
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setErr('');
+          const token = (await db.syncState.get(user.id))?.token;
+          if (!token) return setErr('आधी बाहेर पडून इंटरनेटसह पुन्हा लॉगिन करा.');
+          setBusy(true);
+          try {
+            const r = await api.changePhone(token, pw, phone);
+            await db.users.update(user.id, { phone: r.account.phone, updatedAt: Date.now() });
+            setPhone('');
+            setPw('');
+            toast('मोबाईल नंबर बदलला.');
+          } catch (x) {
+            setErr(cloudMessage(x));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <TextField label="नवीन मोबाईल नंबर" type="tel" inputMode="tel" value={phone} onChange={setPhone} autoComplete="tel" required />
+        <TextField label="पासवर्ड" type="password" value={pw} onChange={setPw} autoComplete="current-password" required />
+        {err ? <Notice kind="error">{err}</Notice> : null}
+        <div>
+          <Button type="submit" loading={busy} icon="phone">
+            नंबर बदला
+          </Button>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
 function AccountSection() {
   const { user, cls } = useTeacher();
   const { meta } = useSession();
   return (
     <div className="grid gap-4">
+      <OnlineAccount />
       <Panel title="माझे खाते">
         <dl className="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[15px]">
           <dt className="text-muted">वापरकर्ता नाव</dt>

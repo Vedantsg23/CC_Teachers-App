@@ -42,8 +42,10 @@ export default function ReportScreen({ reportKey }: { reportKey?: string }) {
   const opts: ReportOpts = useMemo(() => {
     const t = sp.get('term');
     const p = sp.get('period');
+    const ts = sp.get('terms');
     return {
       term: t === '2' ? 2 : t === '1' ? 1 : defaultTerm,
+      terms: ts === '1' ? [1] : ts === '2' ? [2] : [1, 2],
       period: p === '1' ? 1 : p === '2' ? 2 : p === 'annual' ? 'annual' : ((defaultTerm === 1 ? 1 : 'annual') as Period),
       subject: sp.get('subject') ?? 'all',
       student: sp.get('student') ?? 'all',
@@ -65,8 +67,25 @@ export default function ReportScreen({ reportKey }: { reportKey?: string }) {
   const close = () => (loc.key === 'default' ? nav('/reports') : nav(-1));
 
   const ctx: ReportCtx = { school, cls, cfg, teacher: user.displayName, b, lc };
+  const paper = sp.get('paper') === 'A3' ? 'A3' : sp.get('paper') === 'A4' ? 'A4' : (def.paper ?? 'A4');
+  const termsKey = opts.terms.length === 2 ? 'both' : String(opts.terms[0]);
   const optionUi = def.opts.length ? (
     <div className="flex flex-wrap items-end gap-3">
+      {def.opts.includes('terms') ? (
+        <div>
+          <span className="mb-0.5 block text-[12.5px] font-semibold text-muted">सत्र</span>
+          <Segmented
+            label="सत्र"
+            value={termsKey}
+            onChange={(v) => set('terms', v)}
+            options={[
+              { value: '1', label: TERM_LABEL[1] },
+              { value: '2', label: TERM_LABEL[2] },
+              { value: 'both', label: 'दोन्ही सत्रे' },
+            ]}
+          />
+        </div>
+      ) : null}
       {def.opts.includes('term') ? (
         <div>
           <span className="mb-0.5 block text-[12.5px] font-semibold text-muted">सत्र</span>
@@ -110,6 +129,20 @@ export default function ReportScreen({ reportKey }: { reportKey?: string }) {
           />
         </div>
       ) : null}
+      {def.opts.includes('paper') ? (
+        <div>
+          <span className="mb-0.5 block text-[12.5px] font-semibold text-muted">कागद</span>
+          <Segmented
+            label="कागद"
+            value={paper}
+            onChange={(v) => set('paper', v)}
+            options={[
+              { value: 'A4', label: 'A4' },
+              { value: 'A3', label: 'A3' },
+            ]}
+          />
+        </div>
+      ) : null}
       {def.opts.includes('group') ? (
         <div>
           <span className="mb-0.5 block text-[12.5px] font-semibold text-muted">गट</span>
@@ -130,6 +163,8 @@ export default function ReportScreen({ reportKey }: { reportKey?: string }) {
   const studentName = opts.student !== 'all' ? b.allStudents.find((s) => s.id === opts.student)?.fullName : '';
   const suffix = [
     def.opts.includes('term') ? TERM_LABEL[opts.term] : '',
+    def.opts.includes('terms') && opts.terms.length === 1 ? TERM_LABEL[opts.terms[0]] : '',
+    def.opts.includes('paper') && paper === 'A3' ? 'A3' : '',
     def.opts.includes('period') ? (opts.period === 'annual' ? 'वार्षिक' : TERM_LABEL[opts.period]) : '',
     studentName ?? '',
   ]
@@ -142,6 +177,7 @@ export default function ReportScreen({ reportKey }: { reportKey?: string }) {
       title={def.title}
       fileName={fileName}
       orientation={def.opts.includes('orientation') ? opts.orientation : def.orientation}
+      paper={def.opts.includes('paper') ? paper : 'A4'}
       options={optionUi}
       onClose={close}
       showPageNumbers={cfg.report.showPageNumbers}

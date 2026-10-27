@@ -30,9 +30,9 @@ beforeAll(async () => {
       { username: 'teacher5', displayName: 'पाचवी शिक्षक', standard: 5, section: 'अ', password: 'pass5555' },
     ],
   });
-  const a7 = await login('teacher7', 'pass7777', '2026-27', false);
+  const a7 = await login('teacher7', 'pass7777', '2026-27');
   s7 = { classId: a7.classRoom!.id, userId: a7.user.id };
-  const a5 = await login('teacher5', 'pass5555', '2026-27', false);
+  const a5 = await login('teacher5', 'pass5555', '2026-27');
   s5 = { classId: a5.classRoom!.id, userId: a5.user.id };
 });
 
@@ -48,14 +48,14 @@ describe('setup and login', () => {
     expect(c7.config.subjects).toHaveLength(9);
   });
   it('rejects a wrong password', async () => {
-    await expect(login('teacher7', 'nope', '2026-27', false)).rejects.toBeInstanceOf(LoginError);
+    await expect(login('teacher7', 'nope', '2026-27')).rejects.toBeInstanceOf(LoginError);
   });
   it('does not store plain-text passwords', async () => {
     const users = await db.users.toArray();
     expect(JSON.stringify(users)).not.toContain('pass7777');
   });
   it('restores and ends sessions', async () => {
-    await login('teacher5', 'pass5555', '2026-27', false);
+    await login('teacher5', 'pass5555', '2026-27');
     const st = await restoreSession();
     expect(st?.user.username).toBe('teacher5');
     await logout();
@@ -132,7 +132,7 @@ describe('backup / restore', () => {
     // a second std-7 class restoring the same backup must not reuse class-7 ids
     const admin = (await db.users.where('username').equals('admin').first())!;
     await adminCreateTeacher(admin.id, { username: 'teacher7b', displayName: 'दुसरे सातवी शिक्षक', standard: 7, section: 'क', password: 'pass7b77' });
-    const a7b = await login('teacher7b', 'pass7b77', '2026-27', false);
+    const a7b = await login('teacher7b', 'pass7b77', '2026-27');
     const s7b = { classId: a7b.classRoom!.id, userId: a7b.user.id };
     await restoreClass(s7b, (await parseBackup(text)) as never);
     const other = (await repo.listStudents(s7b)).map((s) => s.id);

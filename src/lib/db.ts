@@ -16,6 +16,8 @@ import type {
   RemarkItem,
   SessionRec,
   Student,
+  SyncShadow,
+  SyncState,
   User,
 } from './types';
 
@@ -34,6 +36,8 @@ export type CceDB = Dexie & {
   dailyAttendance: EntityTable<DailyAttendance, 'id'>;
   remarkLibrary: EntityTable<RemarkItem, 'id'>;
   certificates: EntityTable<Certificate, 'id'>;
+  syncState: EntityTable<SyncState, 'acct'>;
+  syncShadow: EntityTable<SyncShadow, 'key'>;
 };
 
 export function createDb(name = DB_NAME): CceDB {
@@ -51,6 +55,11 @@ export function createDb(name = DB_NAME): CceDB {
     dailyAttendance: 'id, classId, [classId+date]',
     remarkLibrary: 'id, classId, [classId+category]',
     certificates: 'id, classId, studentId',
+  });
+  // online accounts: per-account sync state and record fingerprints
+  d.version(2).stores({
+    syncState: 'acct',
+    syncShadow: 'key, acct',
   });
   return d;
 }

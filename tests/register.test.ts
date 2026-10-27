@@ -12,7 +12,7 @@ class MemStorage {
 }
 Object.assign(globalThis, { sessionStorage: new MemStorage(), localStorage: new MemStorage() });
 
-const base: RegisterInput = { standard: 6, section: 'अ', displayName: 'श्रीम. नमुना शिक्षिका', username: 'shinde6', password: 'pass6666', confirm: 'pass6666', schoolName: 'नमुना प्राथमिक शाळा' };
+const base: RegisterInput = { standard: 6, section: 'अ', displayName: 'श्रीम. नमुना शिक्षिका', username: 'shinde6', password: 'pass6666', confirm: 'pass6666', phone: '9876543210', schoolName: 'नमुना प्राथमिक शाळा' };
 
 async function fieldOf(p: Promise<unknown>): Promise<string> {
   try {
@@ -33,14 +33,16 @@ describe('teacher self-registration', () => {
 
   it('works on a brand-new device: picks the standard, creates the class, saves the school name', async () => {
     expect((await repo.getMeta())?.setupDone ?? false).toBe(false);
-    const u = await registerTeacher(base);
+    const { user: u, online } = await registerTeacher(base);
+    expect(online).toBe(false); // the online service is off in unit tests
     expect(u.role).toBe('teacher');
     expect(u.standard).toBe(6);
+    expect(u.pendingPhone).toBe('9876543210'); // goes online at the next login with internet
     const meta = await repo.getMeta();
     expect(meta?.setupDone).toBe(true);
     expect(meta?.currentYear).toBe('2026-27');
     expect((await repo.getSchool()).name).toBe('नमुना प्राथमिक शाळा');
-    const st = await login('shinde6', 'pass6666', '2026-27', false);
+    const st = await login('shinde6', 'pass6666', '2026-27');
     expect(st.classRoom?.standard).toBe(6);
     expect(st.classRoom?.section).toBe('अ');
     expect(st.classRoom?.config.subjects.map((s) => s.id)).toContain('science');
@@ -61,13 +63,15 @@ describe('teacher self-registration', () => {
     expect(await fieldOf(registerTeacher({ ...base, username: 'new1', displayName: ' ' }))).toBe('displayName');
     expect(await fieldOf(registerTeacher({ ...base, username: 'new1', password: '123', confirm: '123' }))).toBe('password');
     expect(await fieldOf(registerTeacher({ ...base, username: 'new1', confirm: 'different' }))).toBe('confirm');
+    expect(await fieldOf(registerTeacher({ ...base, username: 'new1', phone: '12345' }))).toBe('phone');
+    expect(await fieldOf(registerTeacher({ ...base, username: 'new1', phone: '' }))).toBe('phone');
     expect(await repo.getUserByUsername('new1')).toBeUndefined();
   });
 
   it('a second teacher gets an isolated class of their own standard', async () => {
     const stu = await repo.saveStudent(s6, { ...repo.emptyStudent(s6.classId), fullName: 'नमुना विद्यार्थी', rollNo: 1 });
     await registerTeacher({ ...base, standard: 5, section: 'ब', username: 'patil5', password: 'pass5555', confirm: 'pass5555', schoolName: 'दुसरे नाव' });
-    const st5 = await login('patil5', 'pass5555', '2026-27', false);
+    const st5 = await login('patil5', 'pass5555', '2026-27');
     const s5 = { classId: st5.classRoom!.id, userId: st5.user.id };
     expect(st5.classRoom?.standard).toBe(5);
     expect(await repo.listStudents(s5)).toHaveLength(0);

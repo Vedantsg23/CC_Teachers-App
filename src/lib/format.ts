@@ -65,6 +65,12 @@ export function ageOn(dob: string, on: string = todayIso()): number | null {
   return age;
 }
 
+/** "14:05" (24-hour clock, local time). */
+export function fmtTime(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 /** Marks: integer as-is, otherwise up to 2 decimals without trailing zeros. */
 export function fmtNum(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '';

@@ -136,6 +136,14 @@
   font-weight: 700;
   background: #f1f4f9;
 }
+/* वर्गनिहाय नोंद: सर्व विषयांचे एकूण व श्रेणी */
+.rt td.cr-total {
+  background: #f1f4f9;
+  white-space: nowrap;
+}
+.rt th.cr-total {
+  white-space: nowrap;
+}
 .rt.big {
   font-size: 10.5pt;
 }
@@ -235,21 +243,6 @@
   font-size: 11.5pt;
   background: var(--rh);
 }
-.sh-head td.sh-photo {
-  width: 19mm;
-  min-width: 19mm;
-  height: 19mm;
-  padding: 0.6mm;
-  text-align: center;
-}
-.sh-head td.sh-photo img {
-  display: block;
-  width: 16.5mm;
-  height: 19mm;
-  margin: 0 auto;
-  object-fit: cover;
-}
-
 .rt.np {
   font-size: 7.6pt;
   line-height: 1.15;
@@ -485,6 +478,13 @@
   height: 30mm;
   margin: 14mm auto 4mm;
 }
+.cover-logo {
+  display: block;
+  width: 40mm;
+  height: 33.4mm;
+  object-fit: contain;
+  margin: 12mm auto 4mm;
+}
 .cover-org {
   font-size: 13pt;
 }
@@ -535,201 +535,273 @@
   font-weight: 700;
 }
 
-/* progress card (two terms side by side) */
-.pc-halves {
-  display: flex;
-  gap: 0;
-  height: 100%;
+/* ------------------------------------------------------------------ */
+/* विद्यार्थी प्रगतीपत्रक — folded A4 card (two panels per landscape page) */
+/* ------------------------------------------------------------------ */
+.a4.landscape.pc {
+  padding: 7mm 7mm;
 }
-.pc-half {
+/* a folded card: no page numbers */
+.a4.pc .page-no {
+  display: none;
+}
+.pc-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16mm;
+}
+.pc-panel {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 5mm;
+  border: 1.2pt solid #000000;
+  padding: 4mm 4.5mm 4mm;
+  font-size: 9.5pt;
+  line-height: 1.3;
 }
-.pc-half + .pc-half {
-  border-left: 0.75pt dashed #9aa9bd;
+.pc .rt {
+  --rb: #000000;
+  --rh: #ffffff;
 }
-.pc-term {
+
+/* back cover */
+.pc-att-title {
   text-align: center;
-  font-size: 12.5pt;
   font-weight: 700;
-  color: #1e3a6e;
-  margin-bottom: 1mm;
+  font-size: 10.5pt;
+  margin: 0 0 1.5mm;
+}
+.pc-grade-title {
+  margin-top: 6mm;
+}
+.rt.pc-att {
+  table-layout: fixed;
+  font-size: 9pt;
+}
+.rt.pc-att th,
+.rt.pc-att td {
+  padding: 0.6mm 0.3mm;
+}
+.rt.pc-att th.vt-cell {
+  height: 23mm;
+  font-weight: 600;
+}
+.rt.pc-att .pc-att-k,
+.rt.pc-grades .pc-att-k {
+  width: 23mm;
+  text-align: left;
+  padding-left: 1.2mm;
+  font-weight: 600;
+}
+.rt.pc-att tbody tr {
+  height: 11mm;
+}
+.rt.pc-att tr.pc-att-sign {
+  height: 19mm;
+}
+.rt.pc-grades {
+  table-layout: fixed;
+  font-size: 7.6pt;
+  line-height: 1.15;
+}
+.rt.pc-grades td {
+  padding: 0.8mm 0.2mm;
+}
+.rt.pc-grades td.pc-range {
+  height: 16mm;
+}
+.rt.pc-grades td.b {
+  font-size: 9.5pt;
+  height: 8mm;
+}
+.pc-reopen {
+  margin-top: auto;
+  font-size: 10pt;
+  font-weight: 600;
+  padding-bottom: 2mm;
+}
+.pc-dots {
+  display: inline-block;
+  width: 34mm;
+  border-bottom: 0.75pt dotted #000000;
+}
+
+/* front cover */
+.pc-front-top {
+  position: relative;
+  text-align: center;
+  line-height: 1.35;
+}
+.pc-front-top.with-logo {
+  min-height: 19mm;
+  padding: 1.5mm 24mm 0;
+}
+.pc-logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22mm;
+  height: 18.4mm;
+  object-fit: contain;
+}
+.pc-org {
+  font-size: 12pt;
+  font-weight: 700;
+}
+.pc-udise {
+  font-size: 10pt;
+  font-weight: 700;
+  margin-top: 1mm;
 }
 .pc-school {
   text-align: center;
-  font-size: 8.5pt;
-  margin-bottom: 0.5mm;
-}
-.pc-half .rpt-meta {
-  font-size: 9pt;
-  line-height: 1.4;
-}
-.pc-half .rt {
-  font-size: 8.2pt;
-}
-.pc-half .rt td,
-.pc-half .rt th {
-  padding: 0.7mm 0.7mm;
-}
-.pc-half .sign-row {
-  margin-top: auto;
-  padding-top: 7mm;
-  font-size: 8.5pt;
-}
-.pc-half .sign {
-  min-width: 0;
-}
-
-/* प्रगती पत्रक: cover + grades page */
-.pp-school {
-  text-align: center;
-  line-height: 1.35;
-  margin-top: 2mm;
-}
-.pp-org {
-  font-size: 11pt;
-}
-.pp-name {
-  font-size: 17pt;
+  font-size: 14pt;
   font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.5mm;
 }
-.pp-place {
-  font-size: 10pt;
-}
-.pp-title {
+.pc-place {
   text-align: center;
-  font-size: 30pt;
-  font-weight: 700;
-  color: #1e3a6e;
-  line-height: 1.25;
-  margin-top: 7mm;
+  font-size: 9.5pt;
+  font-weight: 600;
+  margin-top: 0.8mm;
 }
-.pp-sub {
-  text-align: center;
+.pc-badge {
+  align-self: center;
+  margin-top: 3mm;
+  padding: 1.3mm 7mm 1.6mm;
+  background: #2b2b2b;
+  color: #ffffff;
   font-size: 12pt;
-  margin-top: 0.5mm;
+  font-weight: 700;
 }
-.pp-class {
-  display: flex;
-  justify-content: center;
-  gap: 12mm;
-  font-size: 13pt;
-  margin: 4mm 0 6mm;
-}
-.pp-box {
-  border: 0.75pt solid var(--rb);
-  margin-bottom: 6mm;
-}
-.pp-box-title,
-.pp-att-title,
-.pp-sec {
+.pc-year {
+  text-align: center;
   font-size: 11.5pt;
   font-weight: 700;
-  color: #1e3a6e;
+  margin: 2.5mm 0 2mm;
 }
-.pp-box-title {
-  background: var(--rh);
-  color: #000000;
-  text-align: center;
-  padding: 1mm;
-  border-bottom: 0.75pt solid var(--rb);
+.pc-info,
+.pc-health {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
 }
-.pp-info {
-  display: flex;
-  gap: 4mm;
-  padding: 2mm 3mm;
-}
-.pp-info table {
-  flex: 1;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 10.5pt;
-}
-.pp-info td {
-  padding: 1.2mm 1mm;
+.pc-info td,
+.pc-health td {
+  padding: 1.25mm 0.6mm;
   vertical-align: top;
-  border-bottom: 0.5pt dotted #8a8a8a;
 }
-.pp-info td.k {
-  width: 52mm;
-  white-space: nowrap;
-}
-.pp-info td.c {
+.pc-info td.pc-star,
+.pc-health td.pc-star {
   width: 4mm;
-}
-.pp-info td.v {
   font-weight: 700;
 }
-.pp-photo {
-  width: 30mm;
-  height: 36mm;
-  border: 0.75pt solid var(--rb);
-  flex: none;
+.pc-info td.k {
+  width: 31mm;
+  white-space: nowrap;
 }
-.pp-photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.pc-info td.v,
+.pc-info td.v2,
+.pc-health td.v {
+  font-weight: 700;
 }
-.pp-att-title {
+.pc-info td.k2 {
+  width: 22mm;
+  white-space: nowrap;
+}
+.pc-info td.v2 {
+  width: 20mm;
+}
+.pc-health {
+  margin-top: 1mm;
+}
+.pc-health td.k {
+  width: 40mm;
+}
+.pc-health td.k.sub {
+  padding-left: 8mm;
+}
+.pc-health td.h {
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 1.2mm;
 }
-.rt.pp-att {
+.pc-health td.v {
+  text-align: center;
+}
+
+/* inside: term cards */
+.pc-cce {
+  text-align: center;
+  font-size: 10pt;
+  font-weight: 600;
+}
+.pc-term-title {
+  text-align: center;
+  font-size: 13pt;
+  font-weight: 700;
+  margin: 0.8mm 0 2mm;
+}
+.pc-meta {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin-bottom: 2.5mm;
+}
+.pc-meta td {
+  padding: 0.9mm 0.5mm;
+}
+.pc-meta td.k {
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 2mm;
+}
+.pc-meta td.v {
+  font-weight: 700;
+}
+.rt.pc-table {
+  table-layout: fixed;
+  font-size: 9pt;
+}
+.rt.pc-table th {
+  font-size: 9pt;
+  line-height: 1.2;
+}
+.rt.pc-table td.pc-subj {
+  line-height: 1.15;
+}
+.rt.pc-table td.pc-g {
   font-size: 10pt;
 }
-.rt.pp-att td {
-  padding: 1.15mm 2mm;
+.rt.pc-table td.pc-rhead {
+  font-weight: 700;
 }
-.pp-head2 {
+.rt.pc-table td.pc-rtext {
+  text-align: center;
+  padding: 1mm 1.5mm;
+  line-height: 1.3;
+}
+.pc-signs {
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
-  gap: 4mm;
-  font-size: 10.5pt;
-  border-bottom: 0.75pt solid var(--rb);
-  padding-bottom: 1.5mm;
-  margin-bottom: 3mm;
+  gap: 3mm;
+  padding-top: 8mm;
+  font-size: 9.5pt;
 }
-.pp-sec {
-  margin: 3mm 0 1.2mm;
+.pc-signs > div {
+  flex: 1 1 0;
+  text-align: center;
 }
-.rt.pp-grades {
-  font-size: 10.5pt;
+.pc-signs .lbl {
+  font-weight: 600;
 }
-.rt.pp-grades td {
-  padding: 1.25mm 2mm;
-}
-.rt.pp-grades td.pp-g {
-  font-size: 11pt;
-}
-.rt.pp-notes {
-  font-size: 10pt;
-}
-.rt.pp-notes td {
-  height: 19mm;
-  padding: 1.2mm 2mm;
-  vertical-align: top;
-}
-.rt.pp-notes td.b {
-  vertical-align: middle;
-}
-.rt.pp-sign td {
-  height: 16mm;
-  padding: 1mm 2mm;
-}
-.pp-who {
-  font-size: 8.5pt;
-  margin-top: 0.6mm;
-}
-.pp-legend {
-  margin-top: auto;
-  padding-top: 3mm;
-  font-size: 8pt;
-  color: #333333;
+.pc-signs .who {
+  margin-top: 1mm;
+  font-size: 9pt;
 }
 
 /* leaving certificate */
@@ -803,6 +875,186 @@
 .lc-place {
   margin-top: 3mm;
   font-size: 10pt;
+}
+
+.lc-head.with-logo {
+  position: relative;
+  min-height: 22mm;
+  padding: 0 26mm;
+}
+.lc-logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24mm;
+  height: 20mm;
+  object-fit: contain;
+}
+
+/* leaving certificate — जिल्हा परिषद form */
+.a4.lcz {
+  padding: 9mm 12mm 8mm;
+}
+.lcz-body {
+  display: flex;
+  flex-direction: column;
+  font-size: 10.5pt;
+  line-height: 1.3;
+}
+.lcz-top {
+  position: relative;
+  text-align: center;
+}
+.lcz-top.with-logo {
+  min-height: 22mm;
+  padding: 0 28mm;
+}
+.lcz-logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 25mm;
+  height: 20.9mm;
+  object-fit: contain;
+}
+.lcz-no {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 9.5pt;
+}
+.lcz-dept {
+  font-size: 10pt;
+  font-weight: 600;
+  padding-top: 1mm;
+}
+.lcz-fill {
+  display: inline-block;
+  min-width: 22mm;
+  border-bottom: 0.75pt dotted #000000;
+  font-weight: 700;
+}
+.lcz-title {
+  font-size: 21pt;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 0.5mm;
+}
+.lcz-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 3mm;
+  margin-top: 2.1mm;
+}
+.lcz-indent {
+  padding-left: 38mm;
+}
+.lcz-f {
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.lcz-k {
+  white-space: nowrap;
+  padding-right: 1.5mm;
+}
+.lcz-v {
+  flex: 1 1 auto;
+  min-width: 10mm;
+  min-height: 6.2mm;
+  display: flex;
+  align-items: flex-end;
+  border-bottom: 0.75pt dotted #000000;
+  font-weight: 700;
+  padding: 0 1.5mm 0.2mm;
+  line-height: 1.3;
+}
+.lcz-ids {
+  margin-top: 2.5mm;
+}
+.lcz-idrow {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  margin-top: 1.8mm;
+}
+.lcz-idrow .lcz-f {
+  margin-left: 4mm;
+}
+.lcz-gr {
+  margin-left: auto;
+}
+.lcz-grbox {
+  display: inline-block;
+  min-width: 38mm;
+  height: 7.2mm;
+  border: 0.75pt solid #000000;
+  font-weight: 700;
+  text-align: center;
+  line-height: 7mm;
+  padding: 0 2mm;
+}
+.lcz-boxes {
+  display: inline-flex;
+  border-left: 0.75pt solid #000000;
+}
+.lcz-boxes .bx {
+  display: inline-block;
+  width: 6mm;
+  height: 7.2mm;
+  border-top: 0.75pt solid #000000;
+  border-bottom: 0.75pt solid #000000;
+  border-right: 0.75pt solid #000000;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11pt;
+  line-height: 7mm;
+}
+.lcz-date {
+  display: inline-flex;
+  gap: 2.5mm;
+  margin-right: 2mm;
+}
+.lcz-rule {
+  border-top: 1pt solid #000000;
+  margin: 3mm 0 0.5mm;
+}
+.lcz-cert {
+  margin: 3.5mm 0 0;
+  font-weight: 600;
+}
+.lcz-date-line {
+  margin-top: 2.5mm;
+}
+.lcz-signs {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14mm;
+  padding: 0 14mm;
+  font-weight: 700;
+  font-size: 11pt;
+}
+.lcz-sign.right {
+  text-align: center;
+  padding-top: 3mm;
+}
+.lcz-who {
+  font-weight: 400;
+  font-size: 9.5pt;
+}
+.lcz-seal {
+  text-align: right;
+  padding-right: 18mm;
+  margin-top: auto;
+  font-weight: 600;
+}
+.lcz-note {
+  border-top: 1pt solid #000000;
+  margin-top: 1.5mm;
+  padding-top: 1.2mm;
+  font-size: 10pt;
+  font-weight: 600;
 }
 
 /* ------------------------------------------------------------------ */
@@ -897,5 +1149,33 @@
 @media print {
   #print-root .report-stage {
     --s: 1 !important;
+  }
+}
+
+/* A3: the same A4 layout enlarged by √2 (preview, print and PDF) */
+.report-stage.paper-a3 .report-page-wrap.portrait {
+  width: calc(297mm * var(--s));
+  height: calc(420mm * var(--s));
+}
+.report-stage.paper-a3 .report-page-wrap.landscape {
+  width: calc(420mm * var(--s));
+  height: calc(297mm * var(--s));
+}
+.report-stage.paper-a3 .report-page-wrap > .a4 {
+  transform: scale(calc(var(--s) * 1.41421356));
+}
+@media print {
+  #print-root .report-stage.paper-a3 .report-page-wrap.portrait {
+    width: 297mm !important;
+    height: 420mm !important;
+    overflow: hidden !important;
+  }
+  #print-root .report-stage.paper-a3 .report-page-wrap.landscape {
+    width: 420mm !important;
+    height: 297mm !important;
+    overflow: hidden !important;
+  }
+  #print-root .report-stage.paper-a3 .report-page-wrap > .a4 {
+    transform: scale(1.41421356) !important;
   }
 }

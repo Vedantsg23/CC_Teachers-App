@@ -15,7 +15,7 @@ const n = (v: number | null | undefined) => (v === null || v === undefined ? '' 
 const pct2 = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(2));
 const sumMax = (m: ToolMax | undefined) => Object.values(m ?? {}).reduce<number>((a, v) => a + (v ?? 0), 0);
 
-/** Bordered header: title, student details and a photo box (as in the printed registers). */
+/** Bordered header: title and the student's details (as in the printed registers). */
 function SheetHead({ ctx, st, title }: { ctx: ReportCtx; st: Student; title: string }) {
   const { school, cls } = ctx;
   return (
@@ -24,9 +24,6 @@ function SheetHead({ ctx, st, title }: { ctx: ReportCtx; st: Student; title: str
         <tr>
           <td colSpan={3} className="sh-title">
             {title}
-          </td>
-          <td rowSpan={3} className="sh-photo">
-            {st.photo ? <img src={st.photo} alt="" /> : null}
           </td>
         </tr>
         <tr>
@@ -214,20 +211,23 @@ function TermSheet({ ctx, st, term }: { ctx: ReportCtx; st: Student; term: Term 
 }
 
 /* ------------------------------------------------------------------ */
-/* सातत्यपूर्ण सर्वंकष मूल्यमापन नोंदपत्र — दोन्ही सत्रे एका पानावर       */
+/* सातत्यपूर्ण सर्वंकष मूल्यमापन नोंदपत्र — प्रथम / द्वितीय / दोन्ही सत्रे  */
 /* ------------------------------------------------------------------ */
 export function StudentSheetReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
-  const title = `सातत्यपूर्ण सर्वंकष मूल्यमापन नोंदपत्र इ. ${standardNum(ctx.cls.standard)}`;
+  const single = opts.terms.length === 1;
+  const title = `सातत्यपूर्ण सर्वंकष मूल्यमापन नोंदपत्र इ. ${standardNum(ctx.cls.standard)}${single ? ` — ${TERM_LABEL[opts.terms[0]]}` : ''}`;
   return (
     <>
       {pickStudents(ctx, opts).map((st) => (
         <ReportPage key={st.id} className="np-page">
           <div className="page-body">
             <SheetHead ctx={ctx} st={st} title={title} />
-            <TermSheet ctx={ctx} st={st} term={1} />
-            <Signatures items={officialSigns(ctx, 3)} className="official np-sign" />
-            <TermSheet ctx={ctx} st={st} term={2} />
-            <Signatures items={officialSigns(ctx, 3)} className="official np-sign" />
+            {opts.terms.map((t) => (
+              <div key={t}>
+                <TermSheet ctx={ctx} st={st} term={t} />
+                <Signatures items={officialSigns(ctx, 3)} className="official np-sign" />
+              </div>
+            ))}
           </div>
         </ReportPage>
       ))}
@@ -240,7 +240,8 @@ export function StudentSheetReport({ ctx, opts }: { ctx: ReportCtx; opts: Report
 /* ------------------------------------------------------------------ */
 export function RemarksBookReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
   const { cfg, b } = ctx;
-  const title = `आकारिक मूल्यमापन वर्णनात्मक नोंद वही इ. ${standardNum(ctx.cls.standard)}`;
+  const terms = opts.terms;
+  const title = `आकारिक मूल्यमापन वर्णनात्मक नोंद वही इ. ${standardNum(ctx.cls.standard)}${terms.length === 1 ? ` — ${TERM_LABEL[terms[0]]}` : ''}`;
   return (
     <>
       {pickStudents(ctx, opts).map((st) => {
@@ -248,7 +249,7 @@ export function RemarksBookReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportO
         const areas = [
           ...cfg.subjects.map((s) => ({ key: s.id, label: s.name })),
           // व्यक्तिमत्व गुण विशेष is printed only when written for this student
-          ...SPECIAL_AREAS.filter((a) => a.key !== 'personality' || text(1, a.key) || text(2, a.key)).map((a) => ({
+          ...SPECIAL_AREAS.filter((a) => a.key !== 'personality' || terms.some((t) => text(t, a.key))).map((a) => ({
             key: a.key,
             label: a.key === 'hobby' ? 'आवड / छंद' : a.short,
           })),
@@ -263,8 +264,9 @@ export function RemarksBookReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportO
                   <tr>
                     <th style={{ width: '9mm' }}>अ. क्र.</th>
                     <th style={{ width: '27mm' }}>विषय</th>
-                    <th>{TERM_LABEL[1]}</th>
-                    <th>{TERM_LABEL[2]}</th>
+                    {terms.map((t) => (
+                      <th key={t}>{TERM_LABEL[t]}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -272,8 +274,11 @@ export function RemarksBookReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportO
                     <tr key={a.key} style={{ height: `${rowH}mm` }}>
                       <td className="b">{i + 1}</td>
                       <td className="b rb-area">{a.label}</td>
-                      <td className="l rb-text">{text(1, a.key)}</td>
-                      <td className="l rb-text">{text(2, a.key)}</td>
+                      {terms.map((t) => (
+                        <td key={t} className="l rb-text">
+                          {text(t, a.key)}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>

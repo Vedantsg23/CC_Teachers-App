@@ -62,8 +62,8 @@ export function AnnualMarksheetReport({ ctx, opts }: { ctx: ReportCtx; opts: Rep
                   <tr>
                     <th className="l">आईचे नाव</th>
                     <td className="l">{st.motherName}</td>
-                    <th className="l">सरल आयडी</th>
-                    <td className="l">{st.saralId}</td>
+                    <th className="l">पेन नंबर (PEN)</th>
+                    <td className="l">{st.pen}</td>
                   </tr>
                 </tbody>
               </table>
