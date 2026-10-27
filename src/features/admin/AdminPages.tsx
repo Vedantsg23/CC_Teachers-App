@@ -241,7 +241,6 @@ function TeachersAdmin() {
 }
 
 const SAMPLE: Record<string, string> = {
-  certNo: '25',
   issueDate: todayIso(),
   regNo: '5123',
   pen: '27250000001',

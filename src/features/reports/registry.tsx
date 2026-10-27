@@ -4,10 +4,11 @@ import type { IconName } from '../../components/Icon';
 import type { Orientation } from '../../components/report/Report';
 import type { ReportCtx, ReportOpts } from './common';
 import { AttendanceReport, ClassABReport, ClassRegisterReport, CoverReport, IndexReport, StudentListReport, SubjectWiseReport, TypeSummaryReport } from './templates/registers';
+import { GradeCardReport } from './templates/gradeCard';
 import { ProgressCardReport } from './templates/progress';
 import { AnnualMarksheetReport, ResultSummaryReport } from './templates/results';
 import { RemarksBookReport, StudentSheetReport } from './templates/sheets';
-import { CasteGradeSummaryReport, ResultBothTermsReport, SubjectGradeSummaryReport } from './templates/summaries';
+import { CasteGradeSummaryReport, ResultBothTermsReport, SubjectGradeSummaryReport, TermResultReport } from './templates/summaries';
 
 export type OptKey = 'term' | 'terms' | 'period' | 'subject' | 'student' | 'group' | 'orientation' | 'paper';
 
@@ -38,9 +39,11 @@ export const REPORTS: ReportDef[] = [
   { key: 'class-ab', title: 'वर्गनिहाय CCE नोंद (अ–ब)', group: 'मूल्यमापन नोंदी', icon: 'table', orientation: 'landscape', opts: ['term', 'paper'], desc: 'आकारिक, संकलित, एकूण (अ+ब), श्रेणी आणि श्रेणी सारांश', render: (c, o) => <ClassABReport ctx={c} opts={o} /> },
 
   { key: 'remarks', title: 'वर्णनात्मक नोंद वही', group: 'नोंदी व निकाल', icon: 'remarks', orientation: 'portrait', opts: ['terms', 'student'], desc: 'प्रथम सत्र, द्वितीय सत्र किंवा दोन्ही शेजारी — विषयवार नोंदी, विशेष प्रगती, आवड/छंद, सुधारणा', render: (c, o) => <RemarksBookReport ctx={c} opts={o} /> },
-  { key: 'progress-card', title: 'प्रगती कार्ड', group: 'नोंदी व निकाल', icon: 'progress', orientation: 'landscape', opts: ['terms', 'student'], desc: 'घडीचे कार्ड (A4 आडवे, दोन्ही बाजूंनी छपाई): मुखपृष्ठ व उपस्थिती; आत प्रथम व द्वितीय सत्राच्या श्रेणी व वर्णनात्मक नोंदी', render: (c, o) => <ProgressCardReport ctx={c} opts={o} /> },
+  { key: 'progress-card', title: 'प्रगती कार्ड (घडीचे)', group: 'नोंदी व निकाल', icon: 'progress', orientation: 'landscape', opts: ['terms', 'student'], desc: 'घडीचे कार्ड (A4 आडवे, दोन्ही बाजूंनी छपाई): मुखपृष्ठ व उपस्थिती; आत प्रथम व द्वितीय सत्राच्या श्रेणी व वर्णनात्मक नोंदी', render: (c, o) => <ProgressCardReport ctx={c} opts={o} /> },
+  { key: 'grade-card', title: 'प्रगती कार्ड (पिवळे कार्ड)', group: 'नोंदी व निकाल', icon: 'progress', orientation: 'landscape', opts: ['terms', 'student'], desc: 'शाळा, नाव, माध्यम, रजि. नंबर, वर्ग, जन्म दिनांक; प्रथम व द्वितीय सत्राच्या विषयवार श्रेणी व एकूण श्रेणी — एका A4 पानावर दोन कार्डे', render: (c, o) => <GradeCardReport ctx={c} opts={o} /> },
   { key: 'annual-marksheet', title: 'वार्षिक गुणपत्रक', group: 'नोंदी व निकाल', icon: 'marksheet', orientation: 'portrait', opts: ['student'], desc: 'दोन्ही सत्रांचे गुण, वार्षिक गुण, टक्केवारी, श्रेणी व निकाल', render: (c, o) => <AnnualMarksheetReport ctx={c} opts={o} /> },
   { key: 'result-sheet', title: 'निकाल पत्रक (दोन्ही सत्रे)', group: 'नोंदी व निकाल', icon: 'trophy', orientation: 'landscape', opts: ['paper'], paper: 'A3', desc: 'प्रत्येक विषयाचे प्रथम व द्वितीय सत्राचे आकारिक, संकलित, एकूण व श्रेणी; जात/संवर्ग, उपस्थित दिवस (A3 किंवा A4)', render: (c) => <ResultBothTermsReport ctx={c} /> },
+  { key: 'term-result', title: 'सत्र परीक्षा निकाल पत्रक', group: 'नोंदी व निकाल', icon: 'trophy', orientation: 'landscape', opts: ['terms', 'paper'], desc: 'प्रथम सत्र, द्वितीय सत्र किंवा दोन्ही (स्वतंत्र पत्रके) — विषयवार आकारिक, संकलित, एकूण व श्रेणी; एकूण गुण, शेकडा व श्रेणी', render: (c, o) => <TermResultReport ctx={c} opts={o} /> },
   { key: 'grade-wise', title: 'विषयनिहाय / श्रेणीनिहाय संकलन तक्ता', group: 'नोंदी व निकाल', icon: 'bars', orientation: 'landscape', opts: ['paper'], desc: 'प्रत्येक विषयाचा प्रथम व द्वितीय सत्राचा पट व श्रेणीनिहाय मुलगे-मुली', render: (c) => <SubjectGradeSummaryReport ctx={c} /> },
   { key: 'category-wise', title: 'जातीनिहाय / श्रेणीनिहाय संकलन तक्ता', group: 'नोंदी व निकाल', icon: 'group', orientation: 'landscape', opts: ['paper'], desc: 'जात संवर्गनिहाय पटसंख्या, उपस्थित विद्यार्थी व श्रेणी — दोन्ही सत्रे', render: (c) => <CasteGradeSummaryReport ctx={c} /> },
   { key: 'result-summary', title: 'निकाल — एकूण व टक्केवारी', group: 'नोंदी व निकाल', icon: 'marksheet', orientation: 'landscape', opts: ['period', 'paper'], desc: 'विषयवार एकूण गुण, टक्केवारी, श्रेणी, उत्तीर्ण/निकाल व सारांश', render: (c, o) => <ResultSummaryReport ctx={c} opts={o} /> },

@@ -132,13 +132,9 @@ export default function CertificateEdit() {
       toast('कृपया विद्यार्थी निवडा.', 'error');
       return null;
     }
-    if (!cert.certNo.trim()) {
-      toast('कृपया दाखला क्रमांक भरा.', 'error');
-      return null;
-    }
     setBusy(true);
     try {
-      const data: Record<string, string> = { ...cert.data, certNo: cert.certNo, issueDate: cert.issueDate };
+      const data: Record<string, string> = { ...cert.data, issueDate: cert.issueDate };
       // the ZP form edits the name in three parts; keep the full name in step
       if (zp && (data.firstName || data.surname)) data.fullName = [data.firstName, data.fatherFirst, data.surname].map((x) => (x ?? '').trim()).filter(Boolean).join(' ');
       const saved = await track(repo.saveCertificate(scope, { ...cert, data }));
@@ -170,7 +166,7 @@ export default function CertificateEdit() {
     }
   }
 
-  const data: Record<string, string> = { ...cert.data, certNo: cert.certNo, issueDate: cert.issueDate };
+  const data: Record<string, string> = { ...cert.data, issueDate: cert.issueDate };
 
   return (
     <div className="grid gap-4">
@@ -179,7 +175,7 @@ export default function CertificateEdit() {
         <div className="grid gap-4 sm:grid-cols-3">
           <SelectField
             label="विद्यार्थी"
-            className="sm:col-span-3"
+            className="sm:col-span-2"
             value={cert.studentId}
             placeholder="विद्यार्थी निवडा"
             required
@@ -189,7 +185,6 @@ export default function CertificateEdit() {
             }}
             options={b.allStudents.map((s) => ({ value: s.id, label: `${s.rollNo ? `${s.rollNo}. ` : ''}${s.fullName}${s.status === 'left' ? ' (शाळा सोडली)' : ''}` }))}
           />
-          <TextField label="दाखला क्रमांक" value={cert.certNo} onChange={(v) => setCert({ ...cert, certNo: v })} required />
           <TextField label="दाखल्याचा दिनांक" type="date" value={cert.issueDate} onChange={(v) => setCert({ ...cert, issueDate: v })} />
         </div>
       </Panel>
@@ -238,7 +233,7 @@ export default function CertificateEdit() {
       {preview && cert.id ? (
         <ReportViewer
           title={`शाळा सोडल्याचा दाखला — ${data.fullName ?? ''}`}
-          fileName={`${safeFileName(`दाखला-${cert.certNo}-${data.fullName ?? ''}`)}.pdf`}
+          fileName={`${safeFileName(`दाखला-${data.fullName ?? ''}-${fmtDate(cert.issueDate)}`)}.pdf`}
           orientation="portrait"
           onClose={() => setPreview(false)}
           showPageNumbers={false}

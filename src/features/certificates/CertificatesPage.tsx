@@ -36,7 +36,7 @@ export default function CertificatesPage() {
           <table className="grid-table min-w-[620px]">
             <thead>
               <tr>
-                <th>दाखला क्र.</th>
+                <th>अ.क्र.</th>
                 <th className="!text-left">विद्यार्थ्याचे नाव</th>
                 <th>दाखल्याचा दिनांक</th>
                 <th>शाळा सोडल्याचा दिनांक</th>
@@ -44,9 +44,9 @@ export default function CertificatesPage() {
               </tr>
             </thead>
             <tbody>
-              {list.map((c) => (
+              {list.map((c, i) => (
                 <tr key={c.id}>
-                  <td className="tabular font-semibold">{c.certNo}</td>
+                  <td className="tabular font-semibold">{list.length - i}</td>
                   <td className="!text-left">{c.data.fullName || nameOf(c.studentId)}</td>
                   <td className="tabular">{fmtDate(c.issueDate)}</td>
                   <td className="tabular">{fmtDate(c.data.leftDate)}</td>
@@ -63,7 +63,7 @@ export default function CertificatesPage() {
                         className="btn btn-danger-ghost btn-sm !px-2"
                         aria-label="हटवा"
                         onClick={async () => {
-                          if (await confirm({ title: 'दाखला हटवा', message: `दाखला क्र. ${c.certNo} ची नोंद हटवायची का?`, confirmLabel: 'हटवा', danger: true })) {
+                          if (await confirm({ title: 'दाखला हटवा', message: `${c.data.fullName || nameOf(c.studentId)} यांच्या दाखल्याची नोंद हटवायची का?`, confirmLabel: 'हटवा', danger: true })) {
                             await track(repo.deleteCertificate(scope, c.id));
                             toast('दाखल्याची नोंद हटवली.');
                           }

@@ -30,6 +30,7 @@ PW = re.compile(r'^पासवर्ड( \*)?$')
 PW2 = re.compile(r'^पासवर्ड पुन्हा( \*)?$')
 STUDENT = 'आरव संजय पाटील'
 STUDENT2 = 'सई महेश देशमुख'
+HEADMASTER = 'श्रीम. सुनंदा पाटील'
 
 console_errors: list[str] = []
 results: list[tuple[str, bool, str]] = []
@@ -72,7 +73,7 @@ def setup(pg: Page):
     pg.get_by_label('व्यवस्थापन / संस्था').fill('जिल्हा परिषद, पुणे')
     pg.get_by_label('तालुका').fill('हवेली')
     pg.get_by_label('जिल्हा').fill('पुणे')
-    pg.get_by_label('मुख्याध्यापकाचे नाव').fill('श्रीम. सुनंदा पाटील')
+    pg.get_by_label('मुख्याध्यापकाचे नाव').fill(HEADMASTER)
     pg.get_by_role('button', name='पुढील').click()
     pg.get_by_label(PW).fill('admin123')
     pg.get_by_label(PW2).fill('admin123')
@@ -350,7 +351,7 @@ def main():
         check('restore brings back deleted data', True)
 
         # ---------------- every report renders + PDF ----------------
-        keys = ['cover', 'index', 'student-list', 'attendance', 'formative', 'summative', 'subject-wise', 'student-wise', 'class-register', 'class-ab', 'remarks', 'progress-card', 'annual-marksheet', 'result-sheet', 'grade-wise', 'category-wise', 'result-summary']
+        keys = ['cover', 'index', 'student-list', 'attendance', 'formative', 'summative', 'subject-wise', 'student-wise', 'class-register', 'class-ab', 'remarks', 'progress-card', 'grade-card', 'annual-marksheet', 'result-sheet', 'term-result', 'grade-wise', 'category-wise', 'result-summary']
         page_text = {}
         for k in keys:
             go(pg, f'/reports/{k}')
@@ -397,6 +398,24 @@ def main():
         go(pg, '/reports/cover')
         pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
         check('जिल्हा परिषद logo on the मुखपृष्ठ', pg.locator('.report-page-wrap img.cover-logo').count() == 1)
+
+        # ---------------- this round: पिवळे प्रगती कार्ड, सत्र परीक्षा निकाल पत्रक ----------------
+        gc = page_text['grade-card']
+        check('प्रगती कार्ड (पिवळे कार्ड) as on the card', all(w in gc for w in ['विद्यार्थी प्रगतीपत्रक', 'शाळा :', 'विद्यार्थ्याचे नांव :', 'माध्यम :', 'रजि. नंबर :', 'वर्ग :', 'जन्म दिनांक :', '* प्रथम सत्र *', '* द्वितीय सत्र *', 'प्रथम भाषा', 'एकूण श्रेणी', 'पालकांची स्वाक्षरी', 'वर्गशिक्षक', 'मुख्याध्यापक', STUDENT]))
+        go(pg, f'/reports/grade-card?terms=1&student={id1}')
+        pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+        check('पिवळे कार्ड: one student → one card, two cards per A4 sheet', pg.locator('.report-page-wrap').count() == 1 and pg.locator('.report-page-wrap .yc-card .yc-frame').count() == 1)
+        g1 = [c.inner_text().strip() for c in pg.locator('.yc-term').nth(0).locator('td.yc-g').all()]
+        g2 = [c.inner_text().strip() for c in pg.locator('.yc-term').nth(1).locator('td.yc-g').all()]
+        check('पिवळे कार्ड: प्रथम सत्र only → द्वितीय सत्र left blank', any(g1) and not any(g2), f'{g1} / {g2}')
+        trs = page_text['term-result']
+        check('सत्र परीक्षा निकाल पत्रक: a sheet for each सत्र', 'प्रथम सत्र परीक्षा सन' in trs and 'द्वितीय सत्र परीक्षा सन' in trs and all(w in trs for w in ['जात संवर्ग', 'शेकडा', 'केंद्रप्रमुख', STUDENT]))
+        for t, other in [('1', 'द्वितीय सत्र परीक्षा'), ('2', 'प्रथम सत्र परीक्षा')]:
+            go(pg, f'/reports/term-result?terms={t}')
+            pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+            pg.wait_for_timeout(500)
+            txt = '\n'.join(pg.locator('.report-page-wrap').all_inner_texts())
+            check(f'term-result: one सत्र only (terms={t})', other not in txt and 'सत्र परीक्षा सन' in txt)
         go(pg, f'/students/{id1}/edit')
         expect(pg.get_by_label('जात प्रवर्ग')).to_be_visible()
         opts = pg.get_by_label('जात प्रवर्ग').locator('option').all_inner_texts()
@@ -408,12 +427,15 @@ def main():
         pg.get_by_label('इ. सनाप्रमाणे जन्म दिनांक').fill('2014-11-07')
         check('date of birth in Marathi words', pg.get_by_label('जन्म दिनांक अक्षरी').input_value() == 'सात नोव्हेंबर दोन हजार चौदा')
         check('दाखला filled from the student record (name parts)', pg.get_by_label('विद्यार्थ्याचे नाव', exact=True).input_value() == STUDENT2.split()[0] and pg.get_by_label('आडनाव').input_value() == STUDENT2.split()[-1])
+        check('दाखला form has no दाखला क्रमांक field', pg.get_by_label('दाखला क्रमांक').count() == 0)
         pg.get_by_label('शाळा सोडण्याचे कारण').select_option('पुढील शिक्षणासाठी')
         pg.get_by_role('button', name='जतन करा व पूर्वदृश्य').click()
         pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
         pg.wait_for_timeout(600)
         shot(pg, '09-lc-preview', full=False)
         check('दाखला: जिल्हा परिषद form with logo and boxed आधार / अपार', pg.locator('.report-page-wrap img.lcz-logo').count() == 1 and pg.get_by_text('शाळा सोडल्याचे प्रमाणपत्र').count() > 0 and pg.get_by_text('अपार आय.डी. नं.').count() > 0)
+        lc = '\n'.join(pg.locator('.report-page-wrap').all_inner_texts())
+        check('दाखला: no दाखला क्रमांक and no headmaster name (signature label only)', 'दाखला क्र' not in lc and HEADMASTER not in lc and 'मुख्याध्यापक' in lc and HEADMASTER in page_text['progress-card'])
         f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'leaving-certificate.pdf'))
         check('school leaving certificate PDF', pdf_pages(f) == 1)
         pg.get_by_role('button', name='बंद करा').first.click()

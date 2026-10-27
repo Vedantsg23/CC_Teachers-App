@@ -7,7 +7,7 @@ Marathi CCE record app for primary-school teachers (सन 2026-27). Works on ph
 1. Open the site → **नवीन खाते तयार करा**.
 2. Choose your इयत्ता (1–8) and तुकडी, enter your name, a username, a password and your mobile number.
 3. Log in → add students → enter आकारिक / संकलित marks, remarks and attendance.
-4. **अहवाल / PDF** → प्रगतीपत्रक, निकाल पत्रक (A3/A4), registers, शाळा सोडल्याचा दाखला → PDF, print or share.
+4. **अहवाल / PDF** → प्रगती कार्ड (घडीचे or पिवळे कार्ड), निकाल पत्रक (A3/A4), सत्र परीक्षा निकाल पत्रक, registers, शाळा सोडल्याचा दाखला → PDF, print or share. Most reports offer प्रथम सत्र, द्वितीय सत्र or both.
 
 The same username and password work on any device; the data is saved online and synced. Login does not expire — it ends with **बाहेर पडा**. Forgot the password or username? **पासवर्ड / वापरकर्ता नाव विसरलात?** → OTP on the registered mobile number.
 

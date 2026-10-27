@@ -4,6 +4,7 @@
  *    प्रमाणपत्र" with boxed UDISE / PEN / आधार / अपार numbers and dates,
  *    filled from the student's record.
  *  - 'list': the older configurable list (सेटिंग्ज → दाखला नमुना).
+ * Neither prints a दाखला क्रमांक or the headmaster's name (signature only).
  */
 import { fmtDate } from '../../../lib/format';
 import { MONTH_NAMES } from '../../../lib/labels';
@@ -113,11 +114,6 @@ export function ZpCertificate({ school, tpl, data }: { school: School; tpl: LcTe
       <div className="page-body lcz-body">
         <div className={`lcz-top${logo ? ' with-logo' : ''}`}>
           {logo ? <img className="lcz-logo" src={logo} alt="" /> : null}
-          {data.certNo ? (
-            <div className="lcz-no">
-              दाखला क्र. : <b>{data.certNo}</b>
-            </div>
-          ) : null}
           <div className="lcz-dept">
             शिक्षण खाते, जिल्हा परिषद <span className="lcz-fill">{school.district}</span> (प्राथमिक शिक्षण विभाग)
           </div>
@@ -229,10 +225,7 @@ export function ZpCertificate({ school, tpl, data }: { school: School; tpl: LcTe
 
         <div className="lcz-signs">
           <div className="lcz-sign">वर्गशिक्षक</div>
-          <div className="lcz-sign right">
-            मुख्याध्यापक
-            {school.headmaster ? <div className="lcz-who">{school.headmaster}</div> : null}
-          </div>
+          <div className="lcz-sign right">मुख्याध्यापक</div>
         </div>
         <div className="lcz-seal">(शिक्का)</div>
         <div className="lcz-note">टीप :- शाळा सोडल्याचे दाखल्यामध्ये अनाधिकृतरित्या बदल केल्यास संबंधितांवर कायदेशीर कारवाई करण्यात येईल.</div>
@@ -263,10 +256,7 @@ function ListCertificate({ school, tpl, data }: { school: School; tpl: LcTemplat
           {school.recognitionNo ? <span>मान्यता क्र.: {school.recognitionNo}</span> : null}
           <span>माध्यम: {school.medium || 'मराठी'}</span>
         </div>
-        <div className="lc-ids" style={{ fontSize: '10.5pt', marginTop: '3mm' }}>
-          <span>
-            दाखला क्रमांक: <b>{data.certNo || '……'}</b>
-          </span>
+        <div className="lc-ids" style={{ fontSize: '10.5pt', marginTop: '3mm', justifyContent: 'flex-end' }}>
           <span>
             दिनांक: <b>{fmtDate(data.issueDate) || '……'}</b>
           </span>

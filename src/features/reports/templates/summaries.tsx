@@ -1,16 +1,17 @@
 /**
- * Final result reports in the formats used by schools (both सत्र together):
+ * Final result reports in the formats used by schools:
  *  - निकाल पत्रक: per subject, प्रथम व द्वितीय सत्र — आकारिक, संकलित, एकूण, श्रेणी
+ *  - सत्र परीक्षा निकाल पत्रक: the same for one सत्र, with एकूण, शेकडा, श्रेणी
  *  - विषयनिहाय / श्रेणीनिहाय संकलन तक्ता
  *  - जातीनिहाय / श्रेणीनिहाय संकलन तक्ता
  */
 import type { ReactNode } from 'react';
 import { gradeDistribution, groupGradeTable, type GenderCount } from '../../../lib/calc';
 import { fmtNum } from '../../../lib/format';
-import { CASTE_GROUPS, casteGroupOf, categoryShort, NO_GROUP, TERM_LABEL } from '../../../lib/labels';
+import { CASTE_GROUPS, casteGroupOf, categoryShort, NO_GROUP, standardNum, TERM_LABEL } from '../../../lib/labels';
 import type { Subject, Term, ToolMax } from '../../../lib/types';
 import { PagedTable, ReportPage, Signatures } from '../../../components/report/Report';
-import { digitPrinter, fullYear, officialSigns, presentDays, schoolLine, yearMonthsOf, type ReportCtx } from '../common';
+import { digitPrinter, fullYear, officialSigns, presentDays, schoolLine, yearMonthsOf, type ReportCtx, type ReportOpts } from '../common';
 
 const TERMS: Term[] = [1, 2];
 const sumMax = (m: ToolMax | undefined) => Object.values(m ?? {}).reduce<number>((a, v) => a + (v ?? 0), 0);
@@ -163,6 +164,175 @@ export function ResultBothTermsReport({ ctx }: { ctx: ReportCtx }) {
       rows={rows}
       emptyColSpan={4 + subjects.reduce((a, s) => a + perTerm(s) * 2, 0)}
       footer={<Signatures items={officialSigns(ctx, 5)} className="official fr-sign" />}
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* सत्र परीक्षा निकाल पत्रक — one sheet per सत्र                          */
+/* ------------------------------------------------------------------ */
+export function TermResultReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
+  return (
+    <>
+      {opts.terms.map((t) => (
+        <TermResultSheet key={t} ctx={ctx} term={t} />
+      ))}
+    </>
+  );
+}
+
+/** "द्वितीय सत्र परीक्षा सन २०२६/२०२७", then school, केंद्र, तालुका, जिल्हा, इयत्ता. */
+export function termSheetHead(ctx: ReportCtx, term: Term): { title: string; parts: string[] } {
+  const { school, cls } = ctx;
+  const y = Number(cls.year.slice(0, 4));
+  const year = Number.isFinite(y) && y > 0 ? `${y}/${y + 1}` : cls.year;
+  return {
+    title: `${TERM_LABEL[term]} परीक्षा सन ${year}`,
+    parts: [
+      school.name,
+      school.centre ? `केंद्र - ${school.centre}` : '',
+      school.taluka ? `तालुका - ${school.taluka}` : '',
+      school.district ? `जिल्हा - ${school.district}` : '',
+      `इयत्ता ${standardNum(cls.standard)} ${cls.section}`.trim(),
+    ]
+      .map((p) => p.trim())
+      .filter(Boolean),
+  };
+}
+
+function TermResultSheet({ ctx, term }: { ctx: ReportCtx; term: Term }) {
+  const { cfg, b } = ctx;
+  const d = digitPrinter(ctx);
+  const subjects = cfg.subjects;
+  const wOf = (s: Subject) => cfg.weights[String(term) as '1' | '2']?.[s.id];
+  const scholastic = new Set(subjects.filter((s) => sumMax(wOf(s)?.S) > 0).map((s) => s.id));
+  const width = (s: Subject) => (scholastic.has(s.id) ? 4 : 2);
+  const grandMax = subjects.filter((s) => s.inTotal).reduce((a, s) => a + sumMax(wOf(s)?.F) + sumMax(wOf(s)?.S), 0);
+
+  // fixed column widths (landscape A4, 277 mm usable)
+  const fixed = [6, 34.5, 10.5];
+  const tail = [10, 10.5, 8];
+  const numCols = subjects.reduce((a, s) => a + width(s) - 1, 0);
+  const unit = (277 - [...fixed, ...tail].reduce((a, v) => a + v, 0)) / (numCols + subjects.length * 1.12);
+  const colgroup = (
+    <colgroup>
+      {fixed.map((w, i) => (
+        <col key={`f${i}`} style={{ width: `${w}mm` }} />
+      ))}
+      {subjects.flatMap((s) => [
+        ...Array.from({ length: width(s) - 1 }, (_, i) => <col key={`${s.id}${i}`} style={{ width: `${unit.toFixed(2)}mm` }} />),
+        <col key={`${s.id}g`} style={{ width: `${(unit * 1.12).toFixed(2)}mm` }} />,
+      ])}
+      {tail.map((w, i) => (
+        <col key={`t${i}`} style={{ width: `${w}mm` }} />
+      ))}
+    </colgroup>
+  );
+
+  const head = termSheetHead(ctx, term);
+  const header = (
+    <div className="ts-head">
+      <div className="ts-title">{d(head.title)}</div>
+      <div className="ts-sub">
+        {head.parts.map((p) => (
+          <span key={p}>{d(p)}</span>
+        ))}
+      </div>
+    </div>
+  );
+  const thead = (
+    <>
+      <tr>
+        <th rowSpan={3}>अ क्र</th>
+        <th rowSpan={3}>विद्यार्थी नावे</th>
+        <th rowSpan={3} className="ts-xs">
+          जात संवर्ग
+        </th>
+        {subjects.map((s) => (
+          <th key={s.id} colSpan={width(s)} className="ts-subj">
+            {d(scholastic.has(s.id) ? s.name : s.short || s.name)}
+          </th>
+        ))}
+        <th rowSpan={2}>एकूण</th>
+        <th rowSpan={2} className="ts-shade">
+          शेकडा
+        </th>
+        <th rowSpan={2}>श्रेणी</th>
+      </tr>
+      <tr className="ts-cap">
+        {subjects.flatMap((s) =>
+          // zero-width spaces let the narrow caption cells wrap between syllables
+          (scholastic.has(s.id) ? ['आका​रिक', 'संक​लित', 'ए​कूण', 'श्रेणी'] : ['आका​रिक', 'श्रेणी']).map((label, i) => (
+            <th key={`${s.id}${i}`} className={scholastic.has(s.id) && i === 2 ? 'ts-shade' : undefined}>
+              {label}
+            </th>
+          )),
+        )}
+      </tr>
+      <tr className="ts-max">
+        {subjects.flatMap((s) => {
+          const f = sumMax(wOf(s)?.F);
+          const sm = sumMax(wOf(s)?.S);
+          const vals = scholastic.has(s.id) ? [f, sm, f + sm, '-'] : [f + sm, '-'];
+          return vals.map((v, i) => <th key={`${s.id}${i}`}>{v === 0 ? '-' : d(v)}</th>);
+        })}
+        <th>{grandMax ? d(grandMax) : '-'}</th>
+        <th>-</th>
+        <th>-</th>
+      </tr>
+    </>
+  );
+
+  const rows = b.students.map((st, i) => {
+    const r = b.results.get(st.id);
+    const tr = term === 1 ? r?.t1 : r?.t2;
+    const cells: ReactNode[] = [];
+    for (const s of subjects) {
+      const x = r?.details[String(term) as '1' | '2'][s.id];
+      const e = !!x?.entered;
+      const v = (val: number | null | undefined) => (e ? d(n(val)) : '');
+      if (scholastic.has(s.id)) {
+        cells.push(
+          <td key={`${s.id}f`}>{v(x?.fObt)}</td>,
+          <td key={`${s.id}s`}>{v(x?.sObt)}</td>,
+          <td key={`${s.id}t`} className="ts-shade">
+            {v(x?.total)}
+          </td>,
+        );
+      } else {
+        cells.push(<td key={`${s.id}t`}>{v(x?.total)}</td>);
+      }
+      cells.push(
+        <td key={`${s.id}g`} className="ts-g">
+          {e ? d(x?.grade) : ''}
+        </td>,
+      );
+    }
+    // एकूण, शेकडा व श्रेणी once every subject that counts has its marks
+    const done = tr?.status === 'pass' || tr?.status === 'fail';
+    return (
+      <tr key={st.id}>
+        <td>{d(i + 1)}</td>
+        <td className="ts-name">{st.fullName}</td>
+        <td className="ts-xs">{st.category ? categoryShort(st.category) : ''}</td>
+        {cells}
+        <td>{done ? d(n(tr?.total)) : ''}</td>
+        <td className="ts-shade">{done && tr?.pct !== null && tr?.pct !== undefined ? d(tr.pct.toFixed(2)) : ''}</td>
+        <td className="ts-g">{done ? d(tr?.grade) : ''}</td>
+      </tr>
+    );
+  });
+
+  return (
+    <PagedTable
+      orientation="landscape"
+      header={header}
+      thead={thead}
+      colgroup={colgroup}
+      tableClassName="rt ts"
+      rows={rows}
+      emptyColSpan={6 + subjects.reduce((a, s) => a + width(s), 0)}
+      footer={<Signatures items={[{ label: 'वर्गशिक्षक' }, { label: 'मुख्याध्यापक' }, { label: 'केंद्रप्रमुख' }]} className="official ts-sign" />}
     />
   );
 }

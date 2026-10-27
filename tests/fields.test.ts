@@ -1,9 +1,16 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { digitsOnly, validateStudent, verhoeffValid } from '../src/lib/validation';
 import { normalizePhone } from '../src/lib/cloud/account';
 import { canonical, fingerprint } from '../src/lib/cloud/canon';
-import { splitName } from '../src/features/reports/templates/certificate';
+import { defaultLcTemplate } from '../src/lib/defaults';
+import type { School } from '../src/lib/types';
+import type { ReportCtx } from '../src/features/reports/common';
+import { LeavingCertificatePage, splitName } from '../src/features/reports/templates/certificate';
+import { cardSubjectLabel } from '../src/features/reports/templates/gradeCard';
 import { splitThree } from '../src/features/reports/templates/progress';
+import { termSheetHead } from '../src/features/reports/templates/summaries';
 import { CATEGORIES, categoryLabel } from '../src/lib/labels';
 import { logoMode, schoolLogoSrc, ZP_LOGO_SRC } from '../src/lib/logo';
 
@@ -60,6 +67,37 @@ describe('दाखला and प्रगतीपत्रक helpers', () => 
     expect(splitThree(8)).toEqual([3, 3, 2]);
     expect(splitThree(7)).toEqual([3, 2, 2]);
     expect(splitThree(6)).toEqual([2, 2, 2]);
+  });
+});
+
+describe('प्रगती कार्ड (पिवळे) and सत्र परीक्षा निकाल पत्रक', () => {
+  it('names the languages as on the printed card', () => {
+    expect(cardSubjectLabel({ name: 'मराठी', remarkLabel: 'प्रथम भाषा: मराठी' })).toEqual(['प्रथम भाषा', '(मराठी)']);
+    expect(cardSubjectLabel({ name: 'हिंदी', remarkLabel: 'द्वितीय भाषा: हिंदी' })).toEqual(['द्वितीय भाषा', '(हिंदी)']);
+    expect(cardSubjectLabel({ name: 'गणित', remarkLabel: 'गणित' })).toEqual(['गणित']);
+  });
+  it('heads each सत्र sheet with the year and the school line', () => {
+    const ctx = { school: { name: 'जिल्हा परिषद प्राथमिक शाळा नमुनागाव', centre: 'नमुनागाव', taluka: 'नमुना', district: 'पुणे' }, cls: { year: '2026-27', standard: 6, section: 'ब' } } as unknown as ReportCtx;
+    expect(termSheetHead(ctx, 2)).toEqual({
+      title: 'द्वितीय सत्र परीक्षा सन 2026/2027',
+      parts: ['जिल्हा परिषद प्राथमिक शाळा नमुनागाव', 'केंद्र - नमुनागाव', 'तालुका - नमुना', 'जिल्हा - पुणे', 'इयत्ता 6 वी ब'],
+    });
+    const bare = { ...ctx, school: { name: 'नमुना शाळा', centre: '', taluka: '', district: '' } } as unknown as ReportCtx;
+    expect(termSheetHead(bare, 1)).toEqual({ title: 'प्रथम सत्र परीक्षा सन 2026/2027', parts: ['नमुना शाळा', 'इयत्ता 6 वी ब'] });
+  });
+});
+
+describe('शाळा सोडल्याचा दाखला', () => {
+  const school = { name: 'जिल्हा परिषद प्राथमिक शाळा नमुनागाव', udise: '27250800000', headmaster: 'श्रीम. नमुना मुख्याध्यापिका', district: 'पुणे', taluka: 'नमुना', centre: 'नमुनागाव', logo: '', logoMode: 'none' } as unknown as School;
+  const data = { certNo: '25', issueDate: '2026-10-27', firstName: 'सई', surname: 'देशमुख', regNo: '4702' };
+  it('prints neither a दाखला क्रमांक nor the headmaster’s name, in both layouts', () => {
+    for (const layout of ['zp', 'list'] as const) {
+      const html = renderToStaticMarkup(createElement(LeavingCertificatePage, { school, tpl: { ...defaultLcTemplate(), layout }, data }));
+      expect(html).toContain('मुख्याध्यापक');
+      expect(html).toContain('4702');
+      expect(html).not.toContain('दाखला क्र');
+      expect(html).not.toContain('नमुना मुख्याध्यापिका');
+    }
   });
 });
 
