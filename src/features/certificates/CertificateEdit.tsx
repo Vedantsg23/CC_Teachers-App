@@ -11,10 +11,12 @@ import { track } from '../../lib/saveStatus';
 import type { Certificate, ClassRoom, School, Student } from '../../lib/types';
 import { useFeedback } from '../../components/feedback';
 import { ReportViewer } from '../../components/report/ReportViewer';
-import { Button, Checkbox, Notice, PageHeader, Panel, SelectField, TextField } from '../../components/ui';
+import { Button, Checkbox, Notice, PageHeader, Panel, Segmented, SelectField, TextField } from '../../components/ui';
 import { LeavingCertificatePage, splitName, ZP_FIELDS } from '../reports/templates/certificate';
 
 const DATE_FIELDS = new Set(['dob', 'admissionDate', 'leftDate', 'lastAttended']);
+/** Last paper size chosen for the दाखला on this device. */
+const PAPER_KEY = 'cce.lcPaper';
 const SELECTS: Record<string, string[]> = { reason: LEAVING_REASONS, conduct: CONDUCT_OPTIONS, progress: PROGRESS_OPTIONS };
 const WIDE = new Set(['remark', 'fullName', 'lastStd', 'previousSchool', 'dobWords', 'reason']);
 
@@ -94,6 +96,21 @@ export default function CertificateEdit() {
   const [cert, setCert] = useState<Certificate | null>(null);
   const [markLeft, setMarkLeft] = useState(true);
   const [preview, setPreview] = useState(sp.get('preview') === '1');
+  const [paper, setPaper] = useState<'A4' | 'A5'>(() => {
+    try {
+      return localStorage.getItem(PAPER_KEY) === 'A5' ? 'A5' : 'A4';
+    } catch {
+      return 'A4';
+    }
+  });
+  const choosePaper = (p: 'A4' | 'A5') => {
+    setPaper(p);
+    try {
+      localStorage.setItem(PAPER_KEY, p);
+    } catch {
+      /* the choice is only remembered when the browser allows it */
+    }
+  };
   const [busy, setBusy] = useState(false);
   const [loadErr, setLoadErr] = useState<Error | null>(null);
   if (loadErr) throw loadErr;
@@ -233,8 +250,23 @@ export default function CertificateEdit() {
       {preview && cert.id ? (
         <ReportViewer
           title={`शाळा सोडल्याचा दाखला — ${data.fullName ?? ''}`}
-          fileName={`${safeFileName(`दाखला-${data.fullName ?? ''}-${fmtDate(cert.issueDate)}`)}.pdf`}
+          fileName={`${safeFileName(`दाखला-${data.fullName ?? ''}-${fmtDate(cert.issueDate)}${paper === 'A5' ? '-A5' : ''}`)}.pdf`}
           orientation="portrait"
+          paper={paper}
+          options={
+            <div>
+              <span className="mb-0.5 block text-[12.5px] font-semibold text-muted">कागद</span>
+              <Segmented
+                label="कागद"
+                value={paper}
+                onChange={choosePaper}
+                options={[
+                  { value: 'A4' as const, label: 'A4' },
+                  { value: 'A5' as const, label: 'A5' },
+                ]}
+              />
+            </div>
+          }
           onClose={() => setPreview(false)}
           showPageNumbers={false}
           author={school.name}

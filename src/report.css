@@ -299,6 +299,52 @@
   margin-bottom: 2mm;
   font-size: 9pt;
 }
+/* नोंदपत्र for one सत्र: larger type (rows are stretched to fill the page) */
+.np-one .sh-head {
+  font-size: 10.5pt;
+  margin-bottom: 2.5mm;
+}
+.np-one .sh-head td {
+  padding: 1.2mm 2mm;
+}
+.np-one .sh-head td.sh-title {
+  font-size: 13pt;
+}
+.np-one .rt.np {
+  font-size: 9.6pt;
+}
+.np-one .rt.np th {
+  font-size: 8.8pt;
+}
+.np-one .rt.np th.np-term {
+  font-size: 11pt;
+}
+.np-one .rt.np tr.np-num th {
+  font-size: 8.4pt;
+}
+.np-one .rt.np td.np-subj {
+  font-size: 9.6pt;
+}
+.np-one .rt.np td.np-k {
+  font-size: 8.2pt;
+}
+.np-one .rt.np td.np-grade {
+  font-size: 10.5pt;
+}
+.np-one .np-sum {
+  font-size: 9.8pt;
+  line-height: 1.65;
+}
+.np-one .sign-row.np-sign {
+  margin-top: 16mm;
+  font-size: 10.5pt;
+}
+.np-one .sign-row.np-sign .lbl {
+  font-size: 10.5pt;
+}
+.np-one .sign-row.np-sign .who {
+  font-size: 9.5pt;
+}
 
 .rt.rb {
   font-size: 9.5pt;
@@ -1385,5 +1431,33 @@
   }
   #print-root .report-stage.paper-a3 .report-page-wrap > .a4 {
     transform: scale(1.41421356) !important;
+  }
+}
+
+/* A5: the same A4 layout reduced by √2 (शाळा सोडल्याचा दाखला) */
+.report-stage.paper-a5 .report-page-wrap.portrait {
+  width: calc(148mm * var(--s));
+  height: calc(210mm * var(--s));
+}
+.report-stage.paper-a5 .report-page-wrap.landscape {
+  width: calc(210mm * var(--s));
+  height: calc(148mm * var(--s));
+}
+.report-stage.paper-a5 .report-page-wrap > .a4 {
+  transform: scale(calc(var(--s) * 0.70710678));
+}
+@media print {
+  #print-root .report-stage.paper-a5 .report-page-wrap.portrait {
+    width: 148mm !important;
+    height: 210mm !important;
+    overflow: hidden !important;
+  }
+  #print-root .report-stage.paper-a5 .report-page-wrap.landscape {
+    width: 210mm !important;
+    height: 148mm !important;
+    overflow: hidden !important;
+  }
+  #print-root .report-stage.paper-a5 .report-page-wrap > .a4 {
+    transform: scale(0.70710678) !important;
   }
 }

@@ -11,11 +11,11 @@ import { useFeedback } from '../feedback';
 import { Button } from '../ui';
 import type { Orientation } from './Report';
 
-export type Paper = 'A4' | 'A3';
+export type Paper = 'A4' | 'A3' | 'A5';
 
 const PAGE_W_PX = { portrait: (210 / 25.4) * 96, landscape: (297 / 25.4) * 96 };
-/** A3 is A4 enlarged by √2 — every report keeps its A4 layout and prints bigger. */
-const PAPER_SCALE: Record<Paper, number> = { A4: 1, A3: Math.SQRT2 };
+/** A3 is A4 enlarged by √2 and A5 is A4 reduced by √2 — every report keeps its A4 layout. */
+const PAPER_SCALE: Record<Paper, number> = { A4: 1, A3: Math.SQRT2, A5: Math.SQRT1_2 };
 
 function printRoot(): HTMLElement {
   let el = document.getElementById('print-root');
@@ -174,7 +174,7 @@ export function ReportViewer({
         </div>
       </div>
       <div ref={scrollRef} className="report-scroll flex-1 overflow-auto">
-        <div ref={stageRef} className={`report-stage${paper === 'A3' ? ' paper-a3' : ''}`} style={{ ['--s' as string]: scale }}>
+        <div ref={stageRef} className={`report-stage${paper === 'A4' ? '' : ` paper-${paper.toLowerCase()}`}`} style={{ ['--s' as string]: scale }}>
           {children}
         </div>
       </div>

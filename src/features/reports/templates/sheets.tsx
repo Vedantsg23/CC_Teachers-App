@@ -8,7 +8,7 @@ import { assessmentId } from '../../../lib/calc';
 import { fmtNum } from '../../../lib/format';
 import { SPECIAL_AREAS, standardNum, TERM_LABEL } from '../../../lib/labels';
 import type { Student, Subject, Term, ToolMax } from '../../../lib/types';
-import { ReportPage, Signatures, VT } from '../../../components/report/Report';
+import { FillBody, ReportPage, Signatures, VT } from '../../../components/report/Report';
 import { officialSigns, pickStudents, type ReportCtx, type ReportOpts } from '../common';
 
 const n = (v: number | null | undefined) => (v === null || v === undefined ? '' : fmtNum(v));
@@ -174,7 +174,7 @@ function TermSheet({ ctx, st, term }: { ctx: ReportCtx; st: Student; term: Term 
               return <td colSpan={nS + 1} rowSpan={2} />;
             };
             return [
-              <tr key={`${subj.id}-o`}>
+              <tr key={`${subj.id}-o`} data-grow="">
                 <td rowSpan={2}>{si + 1}</td>
                 <td rowSpan={2} className="np-subj">
                   {subj.name}
@@ -191,7 +191,7 @@ function TermSheet({ ctx, st, term }: { ctx: ReportCtx; st: Student; term: Term 
                   {d?.grade ?? ''}
                 </td>
               </tr>,
-              <tr key={`${subj.id}-m`} className="np-max">
+              <tr key={`${subj.id}-m`} className="np-max" data-grow="">
                 <td className="np-k">गुण पैकी</td>
                 {cfg.fTools.map((t) => (
                   <td key={t.key}>{w?.F[t.key] || ''}</td>
@@ -216,11 +216,12 @@ function TermSheet({ ctx, st, term }: { ctx: ReportCtx; st: Student; term: Term 
 export function StudentSheetReport({ ctx, opts }: { ctx: ReportCtx; opts: ReportOpts }) {
   const single = opts.terms.length === 1;
   const title = `सातत्यपूर्ण सर्वंकष मूल्यमापन नोंदपत्र इ. ${standardNum(ctx.cls.standard)}${single ? ` — ${TERM_LABEL[opts.terms[0]]}` : ''}`;
+  // one सत्र: larger type; either way the rows are stretched to fill the A4 page
   return (
     <>
       {pickStudents(ctx, opts).map((st) => (
-        <ReportPage key={st.id} className="np-page">
-          <div className="page-body">
+        <ReportPage key={st.id} className={`np-page${single ? ' np-one' : ''}`}>
+          <FillBody>
             <SheetHead ctx={ctx} st={st} title={title} />
             {opts.terms.map((t) => (
               <div key={t}>
@@ -228,7 +229,7 @@ export function StudentSheetReport({ ctx, opts }: { ctx: ReportCtx; opts: Report
                 <Signatures items={officialSigns(ctx, 3)} className="official np-sign" />
               </div>
             ))}
-          </div>
+          </FillBody>
         </ReportPage>
       ))}
     </>

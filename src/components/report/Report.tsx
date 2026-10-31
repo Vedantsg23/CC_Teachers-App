@@ -185,6 +185,41 @@ export function PagedTable({
   );
 }
 
+/**
+ * A page body whose content reaches the bottom of the page: the spare height
+ * is shared out among the table rows marked `data-grow`, so a sheet with
+ * little content (e.g. one सत्र) still fills the whole A4 page — on screen,
+ * in print and in the PDF (which reads this layout).
+ */
+export function FillBody({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ready = useFontsReady();
+  const ref = useRef<HTMLDivElement>(null);
+  // Runs after every render: rows may be reused with new content, so the
+  // heights are reset and measured again. Only DOM styles change (no state).
+  useLayoutEffect(() => {
+    const body = ref.current;
+    if (!ready || !body) return;
+    const rows = Array.from(body.querySelectorAll<HTMLElement>('tr[data-grow]'));
+    rows.forEach((r) => (r.style.height = ''));
+    const last = body.lastElementChild as HTMLElement | null;
+    if (!rows.length || !last || !body.offsetHeight) return;
+    // the preview shows pages scaled down; measure in page (CSS) pixels
+    const box = body.getBoundingClientRect();
+    const s = box.height / body.offsetHeight || 1;
+    const used = (last.getBoundingClientRect().bottom - box.top) / s + (parseFloat(getComputedStyle(last).marginBottom) || 0);
+    const spare = body.clientHeight - used - 3; // a little safety for rounding
+    if (spare < 2) return;
+    const base = rows.map((r) => r.getBoundingClientRect().height / s);
+    const add = spare / rows.length;
+    rows.forEach((r, i) => (r.style.height = `${(base[i] + add).toFixed(2)}px`));
+  });
+  return (
+    <div ref={ref} className={`page-body ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 /** "सातत्यपूर्ण सर्वंकष मूल्यमापन" + meta lines, as in the reference registers. */
 export function CceHeader({ title = 'सातत्यपूर्ण सर्वंकष मूल्यमापन', org, lines }: { title?: string; org?: string; lines: ReactNode[][] }) {
   return (

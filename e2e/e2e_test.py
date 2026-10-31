@@ -32,6 +32,14 @@ STUDENT = 'आरव संजय पाटील'
 STUDENT2 = 'सई महेश देशमुख'
 HEADMASTER = 'श्रीम. सुनंदा पाटील'
 
+# empty space (mm) between the last block of the first report page and the bottom of its body
+FREE_MM_JS = '''() => {
+  const body = document.querySelector('.report-page-wrap .a4 .page-body');
+  const last = body.lastElementChild;
+  const s = body.getBoundingClientRect().height / body.offsetHeight;
+  return +(((body.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom) / s) * 25.4 / 96).toFixed(1);
+}'''
+
 console_errors: list[str] = []
 results: list[tuple[str, bool, str]] = []
 
@@ -395,6 +403,12 @@ def main():
             pg.wait_for_timeout(500)
             txt = '\n'.join(pg.locator('.report-page-wrap').all_inner_texts())
             check(f'{key}: one सत्र only (terms={t})', other not in txt and ('प्रथम सत्र' if t == '1' else 'द्वितीय सत्र') in txt)
+        for t in ['1', '2', 'both']:
+            go(pg, f'/reports/student-wise?terms={t}&student={id1}')
+            pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
+            pg.wait_for_timeout(700)
+            free = pg.evaluate(FREE_MM_JS)
+            check(f'नोंदपत्र fills the A4 page (terms={t})', 0 <= free < 3, f'{free} mm free at the bottom')
         go(pg, '/reports/cover')
         pg.wait_for_selector('.report-page-wrap .a4', timeout=20000)
         check('जिल्हा परिषद logo on the मुखपृष्ठ', pg.locator('.report-page-wrap img.cover-logo').count() == 1)
@@ -438,6 +452,11 @@ def main():
         check('दाखला: no दाखला क्रमांक and no headmaster name (signature label only)', 'दाखला क्र' not in lc and HEADMASTER not in lc and 'मुख्याध्यापक' in lc and HEADMASTER in page_text['progress-card'])
         f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'leaving-certificate.pdf'))
         check('school leaving certificate PDF', pdf_pages(f) == 1)
+        pg.get_by_role('radio', name='A5').click()
+        pg.wait_for_timeout(400)
+        f = download(pg, 'PDF तयार करा', os.path.join(OUT, 'leaving-certificate-a5.pdf'))
+        info = subprocess.run(['pdfinfo', f], capture_output=True, text=True).stdout
+        check('दाखला prints on A5 when chosen', '(A5)' in info and pdf_pages(f) == 1, info.split('Page size:')[1].strip()[:40])
         pg.get_by_role('button', name='बंद करा').first.click()
         logout(pg)
 
